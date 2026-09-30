@@ -1,0 +1,5 @@
+{% extends "admin/base.html" %}{% set active_page='admins' %}{% set breadcrumb='People / Admin users' %}
+{% block title %}Admin users · Admin{% endblock %}{% block admin_content %}
+<div class="admin-page-heading"><div><span class="eyebrow">YOUR TEAM, YOUR WORKSPACE</span><h1>Admin users</h1><p>Manage who has access to this workspace.</p></div><a class="button button-primary" href="/admin/admin-users/new">＋ Invite admin</a></div>
+<section class="admin-panel"><div class="notice-box">Admin access is intended for trusted team members. Review roles regularly.</div>{% set headings=['Name','Email','Role','Last active','Status'] %}{% set fallback_rows=[('Morgan Chen','morgan@example.com','Owner','Today','Active'),('Riley James','riley@example.com','Editor','Sep 29, 2026','Active'),('Casey Patel','casey@example.com','Support','Sep 25, 2026','Active')] %}{% include "admin/_table.html" %}</section>
+{% endblock %}

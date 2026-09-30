@@ -1,0 +1,83 @@
+{% extends "admin/base.html" %}
+{% set active_page = 'packages' %}
+{% set editing = package is defined and package %}
+{% set breadcrumb = 'Workspace / Packages / ' ~ ('Edit package' if editing else 'New package') %}
+{% block title %}{{ 'Edit package' if editing else 'New package' }} · Admin{% endblock %}
+{% block admin_content %}
+<div class="admin-page-heading">
+  <div>
+    <a class="text-link admin-back-link" href="/admin/packages">← All packages</a>
+    <span class="eyebrow editor-eyebrow">YOUR TRAVEL COLLECTION</span>
+    <h1>{{ 'Edit package' if editing else 'Create a package' }}</h1>
+    <p>{{ 'Update the details travelers see about this trip.' if editing else 'Add the details travelers need to imagine their next trip.' }}</p>
+  </div>
+</div>
+{% if errors is defined and errors %}<div class="alert alert-error" role="alert" aria-live="polite"><strong>Please check the highlighted details.</strong>{% for field, message in errors.items() %}<div>{{ message }}</div>{% endfor %}</div>{% endif %}
+<form class="admin-editor-form" action="{{ action_url|default('/admin/packages/' ~ (package.id|default('new') if editing else 'new')) }}" method="post" enctype="multipart/form-data">
+  {{ csrf_token() }}
+  <div class="editor-layout">
+    <div class="editor-main-column">
+      <section class="admin-panel editor-panel" aria-labelledby="package-details-heading">
+        <div class="panel-heading"><div><h2 id="package-details-heading">Package details</h2><p>Give this trip a clear name and tell its story.</p></div></div>
+        <div class="form-grid">
+          <label class="filter-label span-2" for="package-title">Title <span class="required-mark" aria-hidden="true">*</span>
+            <input id="package-title" name="title" required maxlength="160" autocomplete="off" value="{{ package.title|default('') if editing else '' }}" aria-invalid="{{ 'true' if errors is defined and errors.title is defined else 'false' }}" {% if errors is defined and errors.title is defined %}aria-describedby="package-title-error"{% endif %}>
+            {% if errors is defined and errors.title is defined %}<span class="field-error" id="package-title-error">{{ errors.title }}</span>{% endif %}
+          </label>
+          <label class="filter-label span-2" for="package-slug">Slug
+            <input id="package-slug" name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" aria-describedby="package-slug-hint" value="{{ package.slug|default('') if editing else '' }}" placeholder="e.g. disney-adventure-singapore">
+            <small class="field-hint" id="package-slug-hint">Used in the package URL. Use lowercase letters, numbers, and hyphens.</small>
+          </label>
+          <label class="filter-label span-2" for="package-destination">Destination <span class="required-mark" aria-hidden="true">*</span>
+            <select id="package-destination" name="destination" required>
+              <option value="">Choose a destination</option>
+              {% if destinations is defined %}{% for destination_option in destinations %}
+              <option value="{{ destination_option.id|default(destination_option.slug|default(destination_option.name)) }}" {% if editing and package.destination|default(package.destination_id|default('')) == destination_option.id|default(destination_option.slug|default(destination_option.name)) %}selected{% endif %}>{{ destination_option.name|default(destination_option.title|default('Destination')) }}</option>
+              {% endfor %}{% endif %}
+              {% if editing and package.destination is defined and package.destination is string and destinations is not defined %}<option value="{{ package.destination }}" selected>{{ package.destination }}</option>{% endif %}
+            </select>
+            {% if not destinations is defined %}<small class="field-hint">Destination choices will appear here when available.</small>{% endif %}
+          </label>
+          <label class="filter-label span-2" for="package-description">Description <span class="required-mark" aria-hidden="true">*</span>
+            <textarea id="package-description" name="description" rows="7" required>{{ package.description|default('') if editing else '' }}</textarea>
+          </label>
+        </div>
+      </section>
+      <section class="admin-panel editor-panel" aria-labelledby="package-images-heading">
+        <div class="panel-heading"><div><h2 id="package-images-heading">Images</h2><p>Add photos that help travelers picture the experience.</p></div></div>
+        {% if editing and package.images is defined and package.images %}
+        <div class="existing-images" aria-label="Current package images">
+          {% for image in package.images %}
+          <label class="existing-image"><input type="checkbox" name="remove_images" value="{{ image.id|default(image.filename|default(image.url)) }}"><img src="{{ image.url|default(url_for('images', filename=image.filename|default('disney discovery reef.png'))) }}" alt="{{ image.alt|default('Current package image') }}"><span>Remove</span></label>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <label class="upload-dropzone" for="package-images"><span class="upload-icon" aria-hidden="true">↑</span><strong>Choose package images</strong><span>PNG, JPG, or WebP · You can select multiple images</span><input id="package-images" type="file" name="images" accept="image/png,image/jpeg,image/webp" multiple aria-describedby="package-images-hint"></label>
+        <small class="field-hint" id="package-images-hint">The first image can be used as the trip’s main photo.</small>
+      </section>
+    </div>
+    <aside class="editor-side-column">
+      <section class="admin-panel editor-panel" aria-labelledby="trip-details-heading">
+        <div class="panel-heading"><div><h2 id="trip-details-heading">Trip details</h2><p>Help travelers compare their options.</p></div></div>
+        <label class="filter-label" for="package-duration">Duration
+          <input id="package-duration" name="duration" value="{{ package.duration|default('') if editing else '' }}" placeholder="e.g. 4 days">
+        </label>
+        <label class="filter-label" for="package-pricing">Pricing
+          <input id="package-pricing" name="pricing" type="text" inputmode="decimal" value="{{ package.pricing|default(package.price|default('')) if editing else '' }}" placeholder="e.g. $1,240 per person" aria-describedby="package-pricing-hint">
+          <small class="field-hint" id="package-pricing-hint">Enter the display price and currency.</small>
+        </label>
+        <label class="filter-label" for="package-status">Status
+          <select id="package-status" name="status">
+            {% set current_status = package.status|default('draft')|lower if editing else 'draft' %}
+            <option value="draft" {% if current_status == 'draft' %}selected{% endif %}>Draft</option>
+            <option value="published" {% if current_status == 'published' %}selected{% endif %}>Published</option>
+            <option value="archived" {% if current_status == 'archived' %}selected{% endif %}>Archived</option>
+          </select>
+        </label>
+      </section>
+      <section class="editor-help-card"><span aria-hidden="true">✦</span><strong>A good trip page feels personal.</strong><p>Write for a traveler planning real days, not just scanning a list of features.</p></section>
+    </aside>
+  </div>
+  <div class="editor-actions"><a class="button button-outline" href="/admin/packages">Cancel</a><button class="button button-primary" type="submit">{{ 'Save package' if editing else 'Create package' }} <span aria-hidden="true">→</span></button></div>
+</form>
+{% endblock %}

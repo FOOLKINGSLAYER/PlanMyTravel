@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8fc">
+  <title>{% block title %}{{ app_name|default('PlanMyTravel') }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}Thoughtful travel, made just for you. Discover places, plan your trip, and go with confidence.{% endblock %}">
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  {% block shell %}
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="/" aria-label="{{ app_name|default('PlanMyTravel') }} home">
+        <span class="brand-mark" aria-hidden="true">✦</span>
+        <span>{{ app_name|default('PlanMyTravel') }}</span>
+      </a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open navigation"><span></span><span></span><span></span></button>
+      <nav class="primary-nav" id="primary-nav" aria-label="Main navigation">
+        <a href="/search">Explore</a><a href="/guides">Travel guides</a><a href="/pricing">Pricing</a>
+        <div class="nav-actions">
+          {% if current_user is defined and current_user %}
+          <a class="nav-link" href="/trips">My trips</a><a class="button button-sm button-primary" href="/account">My account</a>
+          {% else %}
+          <a class="nav-link" href="/login">Log in</a><a class="button button-sm button-primary" href="/signup">Get started</a>
+          {% endif %}
+        </div>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content">{% block content %}{% endblock %}</main>
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div><a class="brand brand-light" href="/"><span class="brand-mark">✦</span><span>{{ app_name|default('PlanMyTravel') }}</span></a><p>Good trips start with a little inspiration.</p></div>
+      <div><strong>Explore</strong><a href="/search">Destinations</a><a href="/guides">Travel guides</a><a href="/pricing">Plans & pricing</a></div>
+      <div><strong>Plan</strong><a href="/itinerary">Build an itinerary</a><a href="/trips">My trips</a><a href="/reviews">Traveler reviews</a></div>
+      <div><strong>Need a hand?</strong><a href="/account">Your account</a><a href="mailto:hello@planmytravel.example">Contact support</a></div>
+    </div>
+    <div class="container footer-bottom"><span>© {{ current_year|default(2026) }} {{ app_name|default('PlanMyTravel') }}</span><span>Made for the way you travel.</span></div>
+  </footer>
+  {% endblock %}
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

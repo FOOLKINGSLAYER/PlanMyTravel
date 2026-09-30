@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Admin sign in · {{ app_name|default('PlanMyTravel') }}{% endblock %}
+{% block body_class %}admin-login-body{% endblock %}
+{% block content %}
+<section class="admin-login-page"><div class="admin-login-brand"><a class="brand" href="/"><span class="brand-mark">✦</span><span>{{ app_name|default('PlanMyTravel') }}<small>ADMIN</small></span></a></div><form class="form-card admin-login-card" action="/admin/login" method="post">{{ csrf_token() }}<span class="eyebrow">ADMIN WORKSPACE</span><h1>Welcome back.</h1><p>Sign in to manage your travel experiences.</p>{% if error is defined and error %}<div class="alert alert-error" role="alert">{{ error }}</div>{% endif %}<label class="filter-label">Email address<input type="email" name="email" autocomplete="username" required></label><label class="filter-label">Password<input type="password" name="password" autocomplete="current-password" required></label><button class="button button-primary button-full" type="submit">Sign in →</button><a class="admin-login-back" href="/">← Back to website</a></form><p class="admin-login-foot">Secure access for authorized team members only.</p></section>
+{% endblock %}

@@ -1,0 +1,14 @@
+<article class="package-card">
+  <a class="package-image" href="{{ package.url|default('/packages/' ~ package.slug|default(package.id|default('disney-singapore'))) }}">
+    <img src="{{ package.image|default(url_for('images', filename='disney discovery reef.png')) }}" alt="{{ package.image_alt|default(package.title|default('Resort and destination')) }}" loading="lazy">
+    {% if package.badge|default('') %}<span class="image-badge">{{ package.badge }}</span>{% endif %}
+    <button class="save-button" type="button" aria-label="Save {{ package.title|default('this package') }}" data-save-toggle>♡</button>
+  </a>
+  <div class="package-info">
+    <div class="eyebrow">{{ package.location|default('Singapore · 4 days') }}</div>
+    <h3><a href="{{ package.url|default('/packages/' ~ package.slug|default(package.id|default('disney-singapore'))) }}">{{ package.title|default('Disney Adventure Singapore') }}</a></h3>
+    <p>{{ package.summary|default('A magical city break with unforgettable family moments.') }}</p>
+    <div class="package-meta"><span>{% if package.rating_text|default('') %}{{ package.rating_text }}{% else %}★ {{ package.rating|default('4.9') }} <span class="muted">({{ package.review_count|default(128) }})</span>{% endif %}</span><span>{{ package.duration|default('4 days') }}</span></div>
+    <div class="price-row"><span>{% if package.price_text|default('') %}<strong>{{ package.price_text }}</strong>{% else %}From <strong>{{ package.price|default('$1,240') }}</strong> <span class="muted">/ person</span>{% endif %}</span><a class="text-link" href="{{ package.url|default('/packages/' ~ package.slug|default(package.id|default('disney-singapore'))) }}">{{ package.card_link_text|default('View trip') }} <span aria-hidden="true">→</span></a></div>
+  </div>
+</article>

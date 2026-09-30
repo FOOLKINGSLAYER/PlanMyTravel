@@ -216,3 +216,20 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local environment / secrets
+.env
+.flaskenv
+
+# Python environments
+venv/
+.venv/
+
+# Testing
+.pytest_cache/
+.coverage
+
+# Flask instance data
+instance/
+# Local uploaded files
+uploads/

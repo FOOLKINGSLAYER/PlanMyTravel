@@ -1,0 +1,5 @@
+{% extends "admin/base.html" %}{% set active_page='users' %}{% set breadcrumb='People / Travelers' %}
+{% block title %}Travelers · Admin{% endblock %}{% block admin_content %}
+<div class="admin-page-heading"><div><span class="eyebrow">YOUR TRAVEL COMMUNITY</span><h1>Travelers</h1><p>View member details and help keep every journey on track.</p></div></div>
+<section class="admin-panel"><div class="admin-toolbar"><form class="admin-search"><span>⌕</span><input name="q" placeholder="Search by name or email"></form><label class="admin-select-label">Joined <select><option>Any time</option><option>This month</option></select></label></div>{% set headings=['Traveler','Email','Trips','Joined','Status'] %}{% set fallback_rows=[('Olivia Parker','olivia@example.com','2','Sep 18, 2026','Active'),('Jordan Lee','jordan@example.com','1','Sep 12, 2026','Active'),('Avery Smith','avery@example.com','3','Aug 28, 2026','Active')] %}{% include "admin/_table.html" %}</section>
+{% endblock %}

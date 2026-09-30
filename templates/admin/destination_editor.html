@@ -1,0 +1,60 @@
+{% extends "admin/base.html" %}
+{% set active_page = 'destinations' %}
+{% set editing = destination is defined and destination %}
+{% set breadcrumb = 'Workspace / Destinations / ' ~ ('Edit destination' if editing else 'New destination') %}
+{% block title %}{{ 'Edit destination' if editing else 'New destination' }} · Admin{% endblock %}
+{% block admin_content %}
+<div class="admin-page-heading">
+  <div>
+    <a class="text-link admin-back-link" href="/admin/destinations">← All destinations</a>
+    <span class="eyebrow editor-eyebrow">PLACES THAT INSPIRE</span>
+    <h1>{{ 'Edit destination' if editing else 'Create a destination' }}</h1>
+    <p>{{ 'Refresh the details travelers see on this destination page.' if editing else 'Introduce travelers to a place worth discovering.' }}</p>
+  </div>
+</div>
+{% if errors is defined and errors %}<div class="alert alert-error" role="alert" aria-live="polite"><strong>Please check the highlighted details.</strong>{% for field, message in errors.items() %}<div>{{ message }}</div>{% endfor %}</div>{% endif %}
+<form class="admin-editor-form" action="{{ action_url|default('/admin/destinations/' ~ (destination.id|default('new') if editing else 'new')) }}" method="post" enctype="multipart/form-data">
+  {{ csrf_token() }}
+  <div class="editor-layout">
+    <div class="editor-main-column">
+      <section class="admin-panel editor-panel" aria-labelledby="destination-details-heading">
+        <div class="panel-heading"><div><h2 id="destination-details-heading">Destination details</h2><p>Set the name travelers will recognize and the story they’ll remember.</p></div></div>
+        <div class="form-grid">
+          <label class="filter-label span-2" for="destination-name">Name <span class="required-mark" aria-hidden="true">*</span>
+            <input id="destination-name" name="name" required maxlength="120" value="{{ destination.name|default('') if editing else '' }}" aria-invalid="{{ 'true' if errors is defined and errors.name is defined else 'false' }}" {% if errors is defined and errors.name is defined %}aria-describedby="destination-name-error"{% endif %}>
+            {% if errors is defined and errors.name is defined %}<span class="field-error" id="destination-name-error">{{ errors.name }}</span>{% endif %}
+          </label>
+          <label class="filter-label span-2" for="destination-slug">Slug
+            <input id="destination-slug" name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value="{{ destination.slug|default('') if editing else '' }}" placeholder="e.g. singapore" aria-describedby="destination-slug-hint">
+            <small class="field-hint" id="destination-slug-hint">Used in the destination URL. Use lowercase letters, numbers, and hyphens.</small>
+          </label>
+          <label class="filter-label span-2" for="destination-country">Country
+            <input id="destination-country" name="country" autocomplete="country-name" value="{{ destination.country|default('') if editing else '' }}" placeholder="e.g. Singapore">
+          </label>
+          <label class="filter-label span-2" for="destination-description">Description <span class="required-mark" aria-hidden="true">*</span>
+            <textarea id="destination-description" name="description" rows="8" required>{{ destination.description|default('') if editing else '' }}</textarea>
+          </label>
+        </div>
+      </section>
+    </div>
+    <aside class="editor-side-column">
+      <section class="admin-panel editor-panel" aria-labelledby="destination-publish-heading">
+        <div class="panel-heading"><div><h2 id="destination-publish-heading">Destination page</h2><p>Choose the lead image and publishing status.</p></div></div>
+        {% if editing and destination.hero_image|default('') %}
+        <div class="hero-image-preview"><img src="{{ destination.hero_image }}" alt="Current hero image for {{ destination.name|default('destination') }}"><span>Current hero image</span></div>
+        {% endif %}
+        <label class="upload-dropzone compact-dropzone" for="destination-hero-image"><span class="upload-icon" aria-hidden="true">↑</span><strong>Choose a hero image</strong><span>PNG, JPG, or WebP</span><input id="destination-hero-image" type="file" name="hero_image" accept="image/png,image/jpeg,image/webp" aria-describedby="destination-image-hint"></label>
+        <small class="field-hint" id="destination-image-hint">A wide, landscape photo works best at the top of the destination page.</small>
+        <label class="filter-label destination-status-label" for="destination-published">Publishing
+          <select id="destination-published" name="published">
+            <option value="false" {% if not editing or not destination.published|default(false) %}selected{% endif %}>Draft — not visible to travelers</option>
+            <option value="true" {% if editing and destination.published|default(false) %}selected{% endif %}>Published — visible to travelers</option>
+          </select>
+        </label>
+      </section>
+      <section class="editor-help-card"><span aria-hidden="true">⌖</span><strong>Set the scene.</strong><p>Use the description to give travelers a feel for the place, not just a checklist of sights.</p></section>
+    </aside>
+  </div>
+  <div class="editor-actions"><a class="button button-outline" href="/admin/destinations">Cancel</a><button class="button button-primary" type="submit">{{ 'Save destination' if editing else 'Create destination' }} <span aria-hidden="true">→</span></button></div>
+</form>
+{% endblock %}

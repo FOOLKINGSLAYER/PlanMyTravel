@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block body_class %}admin-body{% endblock %}
+{% block shell %}
+<div class="admin-shell">
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <a class="brand" href="/admin"><span class="brand-mark">✦</span><span>{{ app_name|default('PlanMyTravel') }}<small>ADMIN</small></span></a>
+    <nav aria-label="Admin navigation">
+      <span class="admin-nav-label">WORKSPACE</span>
+      <a class="{% if active_page|default('') == 'dashboard' %}active{% endif %}" href="/admin">▦ <span>Overview</span></a>
+      <a class="{% if active_page|default('') == 'packages' %}active{% endif %}" href="/admin/packages">◇ <span>Packages</span></a>
+      <a class="{% if active_page|default('') == 'destinations' %}active{% endif %}" href="/admin/destinations">⌖ <span>Destinations</span></a>
+      <a class="{% if active_page|default('') == 'media' %}active{% endif %}" href="/admin/media">▧ <span>Media library</span></a>
+      <a class="{% if active_page|default('') == 'guides' %}active{% endif %}" href="/admin/guides">♙ <span>Travel guides</span></a>
+      <a class="{% if active_page|default('') == 'reviews' %}active{% endif %}" href="/admin/reviews">☆ <span>Reviews</span></a>
+      <a class="{% if active_page|default('') == 'bookings' %}active{% endif %}" href="/admin/bookings">▤ <span>Bookings</span><span class="nav-count">{{ pending_bookings|default('') }}</span></a>
+      <span class="admin-nav-label admin-nav-spaced">PEOPLE & SETTINGS</span>
+      <a class="{% if active_page|default('') == 'users' %}active{% endif %}" href="/admin/users">♧ <span>Travelers</span></a>
+      <a class="{% if active_page|default('') == 'featured' %}active{% endif %}" href="/admin/featured">✦ <span>Featured content</span></a>
+      <a class="{% if active_page|default('') == 'admins' %}active{% endif %}" href="/admin/admin-users">♙ <span>Admin users</span></a>
+      <a class="{% if active_page|default('') == 'audit' %}active{% endif %}" href="/admin/audit">◷ <span>Audit log</span></a>
+      <a class="{% if active_page|default('') == 'settings' %}active{% endif %}" href="/admin/settings">⚙ <span>Settings</span></a>
+    </nav>
+    <div class="admin-sidebar-bottom"><a href="/" target="_blank" rel="noopener">↗ <span>View website</span></a><div class="admin-user-mini"><span class="admin-avatar">{{ admin.name|default('Admin')|first|upper if admin is defined else 'A' }}</span><span><strong>{{ admin.name|default('Admin') if admin is defined else 'Admin' }}</strong><small>Administrator</small></span><form action="/admin/logout" method="post">{{ csrf_token() }}<button aria-label="Log out" title="Log out">↪</button></form></div></div>
+  </aside>
+  <div class="admin-main">
+    <header class="admin-topbar"><button class="admin-menu-toggle" type="button" aria-label="Toggle sidebar" aria-expanded="false">☰</button><div class="admin-breadcrumb">{{ breadcrumb|default('Workspace') }}</div><div class="topbar-actions"><a href="/" target="_blank" rel="noopener" class="admin-view-link">View website ↗</a><span class="admin-avatar">{{ admin.name|default('A')|first|upper if admin is defined else 'A' }}</span></div></header>
+    <main id="main-content" class="admin-content">{% block admin_content %}{% endblock %}</main>
+    <footer class="admin-footer">© {{ current_year|default(2026) }} {{ app_name|default('PlanMyTravel') }} <span>Admin workspace</span></footer>
+  </div>
+</div>
+{% endblock %}

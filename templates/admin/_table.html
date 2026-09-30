@@ -1,0 +1,3 @@
+<div class="admin-table-wrap"><table class="admin-table"><thead><tr>{% for heading in headings %}<th scope="col">{{ heading }}</th>{% endfor %}<th scope="col">Actions</th></tr></thead><tbody>
+{% if rows is defined and rows %}{% for row in rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}<td><a class="table-action" href="{{ row.url|default('#') }}">Edit</a><button class="table-action table-action-muted" type="button">More</button></td></tr>{% endfor %}{% else %}{% for row in fallback_rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}<td><a class="table-action" href="#">Edit</a><button class="table-action table-action-muted" type="button">More</button></td></tr>{% endfor %}{% endif %}
+</tbody></table></div>

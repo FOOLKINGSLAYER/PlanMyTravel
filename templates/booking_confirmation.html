@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block title %}Request received · {{ app_name|default('PlanMyTravel') }}{% endblock %}
+{% block content %}
+<section class="confirmation-section"><div class="confirmation-card"><span class="success-icon" aria-hidden="true">✓</span><span class="eyebrow">YOU’RE ONE STEP CLOSER</span><h1>Trip request received!</h1><p>We’ve got your request for <strong>{{ booking.package_title|default('Disney Adventure Singapore') }}</strong>. Our team will be in touch soon with the details.</p><div class="confirmation-ref"><span>REFERENCE</span><strong>{{ booking.reference|default('PMT-2026-001') }}</strong></div><div class="hero-actions center-actions"><a class="button button-primary" href="/trips">View my trips</a><a class="button button-outline" href="/search">Explore more trips</a></div></div></section>
+{% endblock %}

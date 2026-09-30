@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ error_title|default('We hit a snag') }} · {{ app_name|default('PlanMyTravel') }}{% endblock %}
+{% block content %}
+<section class="not-found error-page" aria-labelledby="error-heading">
+  <span class="not-found-art error-art" aria-hidden="true">!</span>
+  <span class="eyebrow">{{ error_code|default('SOMETHING WENT OFF COURSE') }}</span>
+  <h1 id="error-heading">{{ error_title|default('We hit a little travel hiccup.') }}</h1>
+  <p>{{ error_message|default('We couldn’t complete that request just now. Please try again, or head back to explore your next adventure.') }}</p>
+  {% if request_id is defined and request_id %}
+  <p class="error-reference">Reference <strong>{{ request_id }}</strong></p>
+  {% endif %}
+  <div class="hero-actions center-actions"><a class="button button-primary" href="/">Back home</a><a class="button button-outline" href="/search">Explore trips</a></div>
+</section>
+{% endblock %}
