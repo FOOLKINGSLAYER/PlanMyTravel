@@ -149,6 +149,7 @@ _MIGRATION_COLUMNS = {
         "emergency_contact_name": "TEXT", "emergency_contact_phone": "TEXT",
         "role": "TEXT NOT NULL DEFAULT 'traveler'",
         "is_active": "INTEGER NOT NULL DEFAULT 1",
+        "session_version": "INTEGER NOT NULL DEFAULT 1",
         "email_verified_at": "TEXT",
         "updated_at": "TEXT",
     },
@@ -156,6 +157,12 @@ _MIGRATION_COLUMNS = {
         "country": "TEXT", "region": "TEXT", "city": "TEXT", "description": "TEXT",
         "short_description": "TEXT", "hero_image_url": "TEXT", "image_url": "TEXT",
         "latitude": "REAL", "longitude": "REAL",
+        "tagline": "TEXT", "category": "TEXT", "travel_styles_json": "TEXT NOT NULL DEFAULT '[]'",
+        "attractions_json": "TEXT NOT NULL DEFAULT '[]'", "activities_json": "TEXT NOT NULL DEFAULT '[]'",
+        "estimated_cost_min": "REAL", "estimated_cost_max": "REAL", "best_season": "TEXT",
+        "cost_currency": "TEXT NOT NULL DEFAULT 'SGD'",
+        "weather_info": "TEXT", "ideal_stay": "TEXT", "rating": "REAL NOT NULL DEFAULT 0",
+        "is_featured": "INTEGER NOT NULL DEFAULT 0",
         "is_published": "INTEGER NOT NULL DEFAULT 1", "updated_at": "TEXT",
     },
     "trips": {
@@ -171,6 +178,12 @@ _MIGRATION_COLUMNS = {
         "origin": "TEXT", "interests_json": "TEXT NOT NULL DEFAULT '[]'",
         "notes": "TEXT", "preferences_json": "TEXT NOT NULL DEFAULT '{}'", "updated_at": "TEXT",
     },
+    "trip_inventory": {
+        "flight_status": "TEXT NOT NULL DEFAULT 'unavailable'",
+        "hotel_status": "TEXT NOT NULL DEFAULT 'unavailable'",
+        "flight_notice": "TEXT",
+        "hotel_notice": "TEXT",
+    },
     "itinerary_plans": {
         "title": "TEXT", "description": "TEXT", "tier": "TEXT NOT NULL DEFAULT 'standard'",
         "summary": "TEXT", "estimated_total": "REAL",
@@ -179,17 +192,20 @@ _MIGRATION_COLUMNS = {
     },
     "itinerary_days": {
         "plan_id": "TEXT", "date": "TEXT", "start_date": "TEXT", "end_date": "TEXT",
-        "title": "TEXT", "summary": "TEXT", "notes": "TEXT",
+        "title": "TEXT", "summary": "TEXT", "notes": "TEXT", "weather_json": "TEXT",
         "metadata_json": "TEXT NOT NULL DEFAULT '{}'",
     },
     "itinerary_items": {
         "description": "TEXT", "location": "TEXT", "start_time": "TEXT", "end_time": "TEXT",
         "sort_order": "INTEGER NOT NULL DEFAULT 0",
-        "item_type": "TEXT NOT NULL DEFAULT 'activity'", "estimated_cost": "REAL",
+        "item_type": "TEXT NOT NULL DEFAULT 'activity'", "category": "TEXT",
+        "duration_min": "INTEGER", "estimated_cost": "REAL", "lat": "REAL", "lng": "REAL",
+        "route_from_prev_json": "TEXT",
         "currency": "TEXT NOT NULL DEFAULT 'USD'", "metadata_json": "TEXT NOT NULL DEFAULT '{}'",
         "updated_at": "TEXT",
     },
     "guides": {
+        "photo_url": "TEXT",
         "languages_json": "TEXT NOT NULL DEFAULT '[]'",
         "specialties_json": "TEXT NOT NULL DEFAULT '[]'",
         "rating": "REAL NOT NULL DEFAULT 0", "is_verified": "INTEGER NOT NULL DEFAULT 0",
@@ -213,6 +229,7 @@ _MIGRATION_COLUMNS = {
         "is_featured": "INTEGER NOT NULL DEFAULT 0",
         "is_published": "INTEGER NOT NULL DEFAULT 1", "updated_at": "TEXT",
         "status": "TEXT NOT NULL DEFAULT 'draft'", "deleted_at": "TEXT",
+        "travel_style": "TEXT",
     },
     "departures": {
         "ends_at": "TEXT", "capacity": "INTEGER", "seats_available": "INTEGER",
@@ -259,6 +276,8 @@ _MIGRATION_COLUMNS = {
         "original_filename": "TEXT NOT NULL DEFAULT ''", "mime_type": "TEXT",
         "file_size": "INTEGER", "size_bytes": "INTEGER", "width": "INTEGER", "height": "INTEGER",
         "alt_text": "TEXT", "folder": "TEXT", "uploaded_by": "INTEGER",
+        "storage_provider": "TEXT NOT NULL DEFAULT 'local'",
+        "cloudinary_public_id": "TEXT",
         "metadata_json": "TEXT NOT NULL DEFAULT '{}'", "updated_at": "TEXT",
     },
     "reviews": {
@@ -523,8 +542,11 @@ def seed_demo_data(app: Flask | None = None) -> None:
         connection.execute(
             """
             INSERT INTO destinations
-                (name, slug, country, city, description, short_description, hero_image_url)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (name, slug, country, city, description, short_description,
+                 tagline, category, travel_styles_json, attractions_json,
+                 activities_json, estimated_cost_min, estimated_cost_max,
+                 cost_currency, best_season, ideal_stay, hero_image_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(slug) DO NOTHING
             """,
             (
@@ -534,6 +556,16 @@ def seed_demo_data(app: Flask | None = None) -> None:
                 "Singapore",
                 "A vibrant city destination with gardens, waterfront sights, and family attractions.",
                 "A family-friendly city break in Singapore.",
+                "A city of gardens, culture, and family adventures.",
+                "city",
+                '["Family","Culture","Food","City break"]',
+                '["Gardens by the Bay","Marina Bay waterfront","Sentosa Island"]',
+                '["Explore gardens","Discover local food","Enjoy family attractions"]',
+                150.0,
+                500.0,
+                "SGD",
+                "February to April",
+                "3–5 days",
                 "/images/disney%20imagination%20garden%201.png",
             ),
         )
@@ -599,13 +631,22 @@ def seed_demo_data(app: Flask | None = None) -> None:
             "updated_at": "CURRENT_TIMESTAMP",
         }
         connection.execute(
-            "INSERT INTO packages (destination_id, title, name, slug, category, short_description, description, duration_days, duration_nights, base_price, price, currency, pricing_json, itinerary_json, inclusions_json, exclusions_json, highlights_json, cover_image_url, is_featured, is_published, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            """
+            INSERT INTO packages
+                (destination_id, title, name, slug, category, travel_style, short_description, description,
+                 duration_days, duration_nights, base_price, price, currency,
+                 pricing_json, itinerary_json, inclusions_json, exclusions_json,
+                 highlights_json, cover_image_url, is_featured, is_published, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(slug) DO NOTHING
+            """,
             (
                 package_data["destination_id"],
                 package_data["title"],
                 package_data["name"],
                 package_data["slug"],
                 package_data["category"],
+                "family",
                 package_data["short_description"],
                 package_data["description"],
                 package_data["duration_days"],
@@ -620,7 +661,7 @@ def seed_demo_data(app: Flask | None = None) -> None:
                 package_data["highlights_json"],
                 package_data["cover_image_url"],
                 package_data["is_featured"],
-                1,
+                package_data["is_published"],
                 package_data["status"],
             ),
         )
@@ -659,7 +700,11 @@ def seed_demo_data(app: Flask | None = None) -> None:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(relative_path) DO UPDATE SET
                     path = excluded.path,
-                    url = excluded.url,
+                    url = CASE
+                        WHEN media_assets.storage_provider = 'cloudinary'
+                        THEN media_assets.url
+                        ELSE excluded.url
+                    END,
                     filename = excluded.filename,
                     original_filename = excluded.original_filename,
                     mime_type = excluded.mime_type,
@@ -691,6 +736,13 @@ def seed_demo_data(app: Flask | None = None) -> None:
                 ON CONFLICT(package_id, image_url) DO NOTHING
                 """,
                 (package_id, asset[0], image_url, image_name.rsplit(".", 1)[0], sort_order),
+            )
+            connection.execute(
+                """INSERT INTO destination_images
+                   (destination_id, media_asset_id, image_url, alt_text, sort_order)
+                   VALUES (?, ?, ?, ?, ?)
+                   ON CONFLICT DO NOTHING""",
+                (destination_id, asset[0], image_url, image_name.rsplit(".", 1)[0], sort_order),
             )
         connection.commit()
     except Exception:

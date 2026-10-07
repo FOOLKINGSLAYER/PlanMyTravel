@@ -1,4 +1,4 @@
-"""Register files under images/ in the media_assets table."""
+"""Upload files under images/ to Cloudinary and register them in the media library."""
 
 from __future__ import annotations
 
@@ -6,7 +6,6 @@ import argparse
 import mimetypes
 from pathlib import Path
 import sys
-from urllib.parse import quote
 
 from flask import Flask, current_app
 
@@ -15,6 +14,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.config import load_config
 from app.db import get_db, init_db
+from app.db_utils import query_one
+from app.services.media import migrated_public_id, upload_bytes_to_cloudinary
 
 
 SUPPORTED_EXTENSIONS = {".avif", ".gif", ".jpeg", ".jpg", ".png", ".svg", ".webp"}
@@ -40,13 +41,32 @@ def sync_images() -> int:
     )
     for image_path in images:
         relative_path = image_path.relative_to(image_dir).as_posix()
+        existing = query_one(
+            """SELECT storage_provider, cloudinary_public_id, url
+               FROM media_assets WHERE relative_path = ?""",
+            (relative_path,),
+        )
+        if (
+            existing
+            and existing["storage_provider"] == "cloudinary"
+            and existing["cloudinary_public_id"]
+            and str(existing["url"] or "").startswith(
+                "https://res.cloudinary.com/"
+            )
+        ):
+            continue
+        result = upload_bytes_to_cloudinary(
+            image_path.read_bytes(),
+            migrated_public_id(relative_path, "images"),
+            overwrite=True,
+        )
         mime_type, _encoding = mimetypes.guess_type(image_path.name)
         connection.execute(
             """
             INSERT INTO media_assets
                 (relative_path, path, url, filename, original_filename, mime_type,
-                 size_bytes, file_size, folder)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 size_bytes, file_size, folder, storage_provider, cloudinary_public_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'cloudinary', ?)
             ON CONFLICT(relative_path) DO UPDATE SET
                 url = excluded.url,
                 path = excluded.path,
@@ -56,12 +76,14 @@ def sync_images() -> int:
                 size_bytes = excluded.size_bytes,
                 file_size = excluded.file_size,
                 folder = excluded.folder,
+                storage_provider = 'cloudinary',
+                cloudinary_public_id = excluded.cloudinary_public_id,
                 updated_at = CURRENT_TIMESTAMP
             """,
             (
                 relative_path,
                 relative_path,
-                f"/images/{quote(relative_path)}",
+                result["secure_url"],
                 image_path.name,
                 image_path.name,
                 mime_type,
@@ -70,6 +92,7 @@ def sync_images() -> int:
                 image_path.parent.relative_to(image_dir).as_posix()
                 if image_path.parent != image_dir
                 else "",
+                result["public_id"],
             ),
         )
     connection.commit()

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Travel preferences · {{ app_name|default('PlanMyTravel') }}{% endblock %}
+{% block content %}
+<section class="page-hero page-hero-small">
+  <div class="container">
+    <span class="eyebrow">YOUR SPACE</span>
+    <h1>Travel preferences</h1>
+    <p>Tell us what makes a trip feel like yours.</p>
+  </div>
+</section>
+<section class="section section-tight">
+  <div class="container account-layout">
+    <nav class="account-nav" aria-label="Account sections">
+      <a href="/account">Personal details</a>
+      <a class="active" href="/account/preferences">Preferences</a>
+      <a href="/account/password">Change password</a>
+      <a href="/trips">My trips</a>
+      <a href="/wallet">Travel wallet</a>
+      <form action="/logout" method="post">
+        {{ csrf_token() }}
+        <button class="button button-ghost" type="submit">Log out</button>
+      </form>
+    </nav>
+    <form class="form-card account-form" action="/account/preferences" method="post">
+      {{ csrf_token() }}
+      {% if error %}<div class="alert alert-error" role="alert">{{ error }}</div>{% endif %}
+      {% if success %}<div class="alert alert-success" role="status">{{ success }}</div>{% endif %}
+      <h2>Your preferences</h2>
+      <p class="muted">These choices help tailor suggestions and saved trip details.</p>
+      <div class="form-grid">
+        <label class="filter-label span-2">Preferred language
+          <select name="preferred_language" required>
+            {% for code, language in languages.items() %}
+            <option value="{{ code }}" {% if preferences.get('preferred_language', 'en') == code %}selected{% endif %}>{{ language }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="filter-label span-2">Preferred trip pace
+          <select name="travel_pace" required>
+            {% for pace in paces %}
+            <option value="{{ pace }}" {% if preferences.get('travel_pace', 'Balanced') == pace %}selected{% endif %}>{{ pace }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <fieldset class="span-2">
+          <legend>What do you enjoy on a trip?</legend>
+          <div class="choice-chips">
+            {% for interest in interests %}
+            <label>
+              <input type="checkbox" name="travel_interests" value="{{ interest }}" {% if interest in preferences.get('travel_interests', []) %}checked{% endif %}>
+              <span>{{ interest }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+      </div>
+      <button class="button button-primary" type="submit">Save preferences</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

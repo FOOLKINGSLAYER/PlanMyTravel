@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ experience.title }} · {{ app_name|default('PlanMyTravel') }}{% endblock %}
+{% block content %}
+<section class="section"><div class="container content-columns">
+  <article class="prose"><span class="eyebrow">{{ experience.category }}{% if experience.destination_name %} · {{ experience.destination_name }}{% endif %}</span><h1>{{ experience.title }}</h1><p>{{ experience.description }}</p>
+    {% if experience.destination_slug %}<a class="button button-outline" href="{{ url_for('public.destination_detail', slug=experience.destination_slug) }}">Explore {{ experience.destination_name }} →</a>{% endif %}
+  </article>
+  <aside class="side-card"><img class="experience-cover" src="{{ experience.image }}" alt="{{ experience.title }}"><p>★ {{ experience.rating }}</p><h2>{{ experience.currency }} {{ experience.price }}</h2><button class="button button-primary{% if experience.saved %} is-saved{% endif %}" type="button" aria-pressed="{{ 'true' if experience.saved else 'false' }}" data-save-toggle data-item-type="experience" data-item-id="{{ experience.id }}">{{ '♥ Saved' if experience.saved else '♡ Save experience' }}</button></aside>
+</div></section>
+{% endblock %}

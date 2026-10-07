@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS media_assets (
     owner_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     uploaded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
     folder TEXT,
+    storage_provider TEXT NOT NULL DEFAULT 'local',
+    cloudinary_public_id TEXT,
     relative_path TEXT NOT NULL UNIQUE,
     path TEXT UNIQUE,
     url TEXT,

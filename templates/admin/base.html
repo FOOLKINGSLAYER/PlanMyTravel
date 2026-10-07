@@ -3,11 +3,12 @@
 {% block shell %}
 <div class="admin-shell">
   <aside class="admin-sidebar" id="admin-sidebar">
-    <a class="brand" href="/admin"><span class="brand-mark">✦</span><span>{{ app_name|default('PlanMyTravel') }}<small>ADMIN</small></span></a>
+    <a class="brand" href="{{ url_for('admin.dashboard') }}"><span class="brand-mark">✦</span><span>{{ app_name|default('PlanMyTravel') }}<small>ADMIN</small></span></a>
     <nav aria-label="Admin navigation">
       <span class="admin-nav-label">WORKSPACE</span>
-      <a class="{% if active_page|default('') == 'dashboard' %}active{% endif %}" href="/admin">▦ <span>Overview</span></a>
+      <a class="{% if active_page|default('') == 'dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">▦ <span>Overview</span></a>
       <a class="{% if active_page|default('') == 'packages' %}active{% endif %}" href="/admin/packages">◇ <span>Packages</span></a>
+      <a class="{% if active_page|default('') == 'experiences' %}active{% endif %}" href="{{ url_for('admin.experiences') }}">✦ <span>Experiences</span></a>
       <a class="{% if active_page|default('') == 'destinations' %}active{% endif %}" href="/admin/destinations">⌖ <span>Destinations</span></a>
       <a class="{% if active_page|default('') == 'media' %}active{% endif %}" href="/admin/media">▧ <span>Media library</span></a>
       <a class="{% if active_page|default('') == 'guides' %}active{% endif %}" href="/admin/guides">♙ <span>Travel guides</span></a>
@@ -16,7 +17,7 @@
       <span class="admin-nav-label admin-nav-spaced">PEOPLE & SETTINGS</span>
       <a class="{% if active_page|default('') == 'users' %}active{% endif %}" href="/admin/users">♧ <span>Travelers</span></a>
       <a class="{% if active_page|default('') == 'featured' %}active{% endif %}" href="/admin/featured">✦ <span>Featured content</span></a>
-      <a class="{% if active_page|default('') == 'admins' %}active{% endif %}" href="/admin/admin-users">♙ <span>Admin users</span></a>
+      {% if admin is defined and admin.role == 'super_admin' %}<a class="{% if active_page|default('') == 'admins' %}active{% endif %}" href="/admin/admin-users">♙ <span>Admin users</span></a>{% endif %}
       <a class="{% if active_page|default('') == 'audit' %}active{% endif %}" href="/admin/audit">◷ <span>Audit log</span></a>
       <a class="{% if active_page|default('') == 'settings' %}active{% endif %}" href="/admin/settings">⚙ <span>Settings</span></a>
     </nav>

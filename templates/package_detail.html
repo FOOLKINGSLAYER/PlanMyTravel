@@ -1,5 +1,115 @@
 {% extends "base.html" %}
-{% block title %}{{ package.title|default('Disney Adventure Singapore') }} · {{ app_name|default('PlanMyTravel') }}{% endblock %}
+{% block title %}{{ package.title }} · {{ app_name|default('PlanMyTravel') }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/package-detail.css') }}">{% endblock %}
 {% block content %}
-<section class="section detail-section"><div class="container"><div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="/search">Trips</a><span>/</span><span>{{ package.title|default('Disney Adventure Singapore') }}</span></div><div class="detail-heading"><div><span class="eyebrow">{{ package.location|default('SINGAPORE · FAMILY ADVENTURE') }}</span><h1>{{ package.title|default('Disney Adventure Singapore') }}</h1><p>★ {{ package.rating|default('4.9') }} <span class="muted">({{ package.review_count|default(128) }} traveler reviews)</span> · {{ package.duration|default('4 days') }}</p></div><button class="button button-outline" type="button" data-save-toggle>♡ Save trip</button></div><div class="gallery-grid"><img class="gallery-main" src="{{ package.image|default(url_for('images', filename='disney discovery reef.png')) }}" alt="{{ package.title|default('Disney Adventure Singapore') }}"><img src="{{ url_for('images', filename='disney imagination garden 1.png') }}" alt="Imagination Garden"><img src="{{ url_for('images', filename='toy story place.png') }}" alt="Toy Story themed area"><img src="{{ url_for('images', filename='way finder bay.png') }}" alt="Wayfinder Bay"><img src="{{ url_for('images', filename='disney imagination garden 2.png') }}" alt="Garden attractions"></div><div class="content-columns detail-columns"><article class="prose"><h2>A little more magic in every day</h2><p>{{ package.description|default('Discover vibrant Singapore and enjoy a thoughtfully paced family adventure at Disney Adventure. Your days balance iconic experiences with time to recharge, so you can make the trip your own.') }}</p><div class="feature-list"><span>✓ Carefully planned daily itinerary</span><span>✓ Family-friendly recommendations</span><span>✓ Flexible booking support</span></div><h2>Your trip at a glance</h2><div class="timeline"><div><span>DAY 1</span><strong>Welcome to Singapore</strong><p>Settle in, explore nearby, and ease into the adventure.</p></div><div><span>DAY 2</span><strong>Discover Disney Adventure</strong><p>Make a full day for rides, shows, gardens, and discovery.</p></div><div><span>DAY 3</span><strong>City sights at your pace</strong><p>Follow your curiosity from local food to waterfront views.</p></div></div></article><aside class="booking-card"><span class="eyebrow">YOUR ADVENTURE AWAITS</span><p class="booking-price">From <strong>{{ package.price|default('$1,240') }}</strong><small> / person</small></p><p class="muted">Dates and final price confirmed at checkout.</p><form action="/checkout" method="get"><label class="filter-label">Travel date<input type="date" name="date" required></label><label class="filter-label">Travelers<select name="travelers"><option>2 travelers</option><option>1 traveler</option><option>3 travelers</option><option>4 travelers</option></select></label><input type="hidden" name="package_id" value="{{ package.id|default('disney-singapore') }}"><button class="button button-primary button-full" type="submit">Continue to booking →</button></form><p class="secure-note">♡ Flexible planning · Secure checkout</p></aside></div></div></section>
+<section class="package-detail">
+  <div class="container">
+    <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="{{ url_for('public.search') }}">Explore</a><span>/</span><span>{{ package.title }}</span></div>
+    <div class="package-detail-heading">
+      <div>
+        <span class="eyebrow">{{ package.destination_name|default(package.destination_country|default('TRAVEL PACKAGE')) }}</span>
+        <h1>{{ package.title }}</h1>
+        <div class="package-detail-meta">
+          {% if package.rating %}<span class="package-rating">★ {{ package.rating }}</span><span class="muted">({{ package.review_count }} traveler reviews)</span><span aria-hidden="true">·</span>{% endif %}
+          <span>{{ package.duration }}</span>
+          {% if package.travel_style %}<span aria-hidden="true">·</span><span>{{ package.travel_style }}</span>{% endif %}
+        </div>
+      </div>
+      <button class="button button-outline{% if package.saved %} is-saved{% endif %}" type="button" aria-pressed="{{ 'true' if package.saved else 'false' }}" data-save-toggle data-item-type="package" data-item-id="{{ package.id }}">{{ '♥ Saved' if package.saved else '♡ Save trip' }}</button>
+    </div>
+
+    <div class="package-gallery" data-gallery data-gallery-mosaic>
+      {% set gallery_count = package.images|length %}
+      <button class="package-gallery-main" type="button" data-gallery-thumb="0" data-gallery-open aria-label="Open package image gallery">
+        <img src="{{ package.images[0].url }}" alt="{{ package.images[0].alt }}" data-gallery-image>
+        <span class="package-gallery-view">▧ View gallery</span>
+        <span class="gallery-counter" aria-live="polite" data-gallery-counter>1 / {{ gallery_count }}</span>
+      </button>
+      <aside class="package-gallery-highlights">
+        <span class="package-highlight-label">PACKAGE HIGHLIGHTS</span>
+        {% for highlight in package.highlights[:3] %}
+        <p><span aria-hidden="true">✓</span>{{ highlight }}</p>
+        {% else %}
+        <p class="package-highlight-empty">A thoughtfully planned getaway.</p>
+        {% endfor %}
+        <a href="#package-highlights">View all highlights ↓</a>
+      </aside>
+      {% for image in package.images[1:4] %}
+      <button class="package-gallery-photo package-gallery-photo-{{ loop.index }}" type="button" data-gallery-thumb="{{ loop.index }}" data-gallery-open aria-label="View image {{ loop.index + 1 }}: {{ image.alt }}">
+        <img src="{{ image.url }}" alt="{{ image.alt }}" data-gallery-image loading="lazy">
+        {% if loop.last %}<span class="package-gallery-photo-label">More package photos</span>{% endif %}
+      </button>
+      {% endfor %}
+    </div>
+
+    <dialog class="gallery-lightbox" data-gallery-dialog aria-label="Package image gallery">
+      <button type="button" class="lightbox-close" aria-label="Close gallery" data-gallery-close>×</button>
+      <button type="button" class="gallery-control gallery-previous" aria-label="Previous image" data-gallery-prev>‹</button>
+      <img src="{{ package.images[0].url }}" alt="{{ package.images[0].alt }}" data-lightbox-image>
+      <button type="button" class="gallery-control gallery-next" aria-label="Next image" data-gallery-next>›</button>
+      <span class="gallery-counter" data-lightbox-counter>1 / {{ gallery_count }}</span>
+    </dialog>
+
+    <nav class="package-section-nav" aria-label="Package details">
+      <a href="#package-itinerary">Itinerary</a>
+      <a href="#package-highlights">Highlights</a>
+      <a href="#package-overview">Overview</a>
+      <button class="package-share-link" type="button" data-share-package>↗ Share</button>
+    </nav>
+
+    <div class="package-detail-layout">
+      <div class="package-detail-main">
+        <section class="package-includes-card" id="package-highlights">
+          <span class="eyebrow">THE GOOD STUFF</span>
+          <h2>Package highlights</h2>
+          {% if package.highlights %}
+          <div class="package-highlight-list">
+            {% for highlight in package.highlights %}<span><b aria-hidden="true">✓</b>{{ highlight }}</span>{% endfor %}
+          </div>
+          {% else %}
+          <p>Get in touch with our travel team to learn what’s included.</p>
+          {% endif %}
+        </section>
+
+        {% if package.itinerary %}
+        <section class="package-itinerary-card" id="package-itinerary">
+          <span class="eyebrow">YOUR DAYS, THOUGHTFULLY PLANNED</span>
+          <h2>Itinerary</h2>
+          <div class="package-timeline">
+            {% for day in package.itinerary %}
+            <article class="package-timeline-day">
+              <span class="package-day-number">DAY {{ day.day|default(loop.index) }}</span>
+              <div><h3>{{ day.title|default('A day of discovery') }}</h3>
+                {% for activity in day.activities|default([]) %}<p>{{ activity }}</p>{% endfor %}
+              </div>
+            </article>
+            {% endfor %}
+          </div>
+        </section>
+        {% endif %}
+
+        <section class="package-overview-card" id="package-overview">
+          <span class="eyebrow">A LITTLE MORE ABOUT THE TRIP</span>
+          <h2>Overview</h2>
+          <p>{{ package.description }}</p>
+        </section>
+      </div>
+
+      <aside class="package-booking-card">
+        <span class="eyebrow">MAKE THIS TRIP YOURS</span>
+        <p class="package-price"><strong>{{ package.price_text }}</strong><span> / person</span></p>
+        <p class="package-price-note">Dates and final pricing are confirmed when you book.</p>
+        <form action="{{ url_for('public.checkout') }}" method="get">
+          <label class="filter-label">Travel date<input type="date" name="date" required></label>
+          <label class="filter-label">Travelers<select name="travelers"><option value="2">2 travelers</option><option value="1">1 traveler</option><option value="3">3 travelers</option><option value="4">4 travelers</option></select></label>
+          <input type="hidden" name="package_id" value="{{ package.id }}">
+          <button class="button button-primary button-full" type="submit">Continue to booking →</button>
+        </form>
+        <a class="button button-ai button-full" href="{{ url_for('public.itinerary_form', destination=package.destination_name|default(package.destination_country|default(''))) }}">✦ Customise with AI</a>
+        <p class="secure-note">Plan at your pace · Secure checkout</p>
+      </aside>
+    </div>
+  </div>
+</section>
+{% if reviews %}<section class="section section-soft"><div class="container"><div class="section-heading"><div><span class="eyebrow">TRAVELER STORIES</span><h2>Reviews</h2></div></div><div class="card-grid">{% for review in reviews %}<article class="side-card"><div class="package-meta"><span>{{ '★' * review.rating }}</span><span>{{ review.reviewer_name }}</span></div><h3>{{ review.title }}</h3><p>{{ review.body }}</p></article>{% endfor %}</div></div></section>{% endif %}
 {% endblock %}

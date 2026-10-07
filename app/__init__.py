@@ -5,18 +5,19 @@ import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request, send_from_directory, session
+from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, session
 from markupsafe import Markup, escape
 
 from app.config import ROOT, load_config
-from app.security import csrf_token, validate_csrf
+from app.security import authenticated_user, csrf_token, validate_csrf
 
 
 def create_app(test_config: dict[str, object] | None = None) -> Flask:
     app = Flask(
         __name__,
-        template_folder="templates",
-        static_folder="static",
+        root_path=str(ROOT),
+        template_folder=str(ROOT / "templates"),
+        static_folder=str(ROOT / "static"),
         instance_path=str(ROOT / "instance"),
     )
     app.config.update(load_config())
@@ -36,6 +37,7 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
 
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
     Path(app.config["IMAGES_DIR"]).mkdir(parents=True, exist_ok=True)
+    Path(app.config["UPLOADS_DIR"]).mkdir(parents=True, exist_ok=True)
     app.permanent_session_lifetime = timedelta(
         minutes=int(app.config["USER_SESSION_MINUTES"])
     )
@@ -51,22 +53,33 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
     from app.db import init_db
 
     init_db(app)
+    with app.app_context():
+        setting = app.extensions.get("planmytravel_settings")
+        if setting is None:
+            from app.db_utils import query_one
+
+            setting = query_one(
+                "SELECT setting_value FROM site_settings WHERE setting_key = 'app_name'"
+            )
+            app.extensions["planmytravel_settings"] = setting
+        if setting and setting.get("setting_value"):
+            app.config["APP_NAME"] = setting["setting_value"]
 
     @app.before_request
     def protect_state_changes() -> None:
+        authenticated_user()
         validate_csrf()
 
     @app.context_processor
     def inject_shared_context() -> dict[str, object]:
-        current_user = None
-        user_id = session.get("user_id")
-        if user_id:
-            from app.db_utils import query_one
+        from app.db_utils import query_all
 
-            current_user = query_one(
-                "SELECT id, email, full_name AS name FROM users WHERE id = ?",
-                (user_id,),
-            )
+        current_user = authenticated_user()
+        user_id = current_user["id"] if current_user else None
+        site_settings = {
+            row["setting_key"]: row["setting_value"]
+            for row in query_all("SELECT setting_key, setting_value FROM site_settings")
+        }
 
         def csrf_input() -> Markup:
             token = escape(csrf_token())
@@ -77,8 +90,10 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
         return {
             "app_name": app.config["APP_NAME"],
             "csrf_token": csrf_input,
+            "csrf_value": csrf_token,
             "current_user_id": user_id,
             "current_user": current_user,
+            "site_settings": site_settings,
             "current_year": datetime.now(timezone.utc).year,
         }
 
@@ -93,7 +108,21 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
 
     @app.get("/images/<path:filename>", endpoint="images")
     def serve_image(filename: str):
+        from app.services.media import cloudinary_image_url
+
+        image_url = cloudinary_image_url(f"/images/{filename}")
+        if image_url:
+            return redirect(image_url, code=302)
         return send_from_directory(app.config["IMAGES_DIR"], filename)
+
+    @app.get("/uploads/<path:filename>", endpoint="uploads")
+    def serve_upload(filename: str):
+        from app.services.media import cloudinary_image_url
+
+        image_url = cloudinary_image_url(f"/uploads/{filename}")
+        if image_url:
+            return redirect(image_url, code=302)
+        return send_from_directory(app.config["UPLOADS_DIR"], filename)
 
     @app.get("/robots.txt")
     def robots_txt():

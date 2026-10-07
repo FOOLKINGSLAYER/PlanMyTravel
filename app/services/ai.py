@@ -88,6 +88,11 @@ Travelers: {data['travelers']}
 Total budget: {data['total_budget']} {data['currency']}
 Travel style: {data['travel_style']}
 Interests: {", ".join(data['interests']) or "general sightseeing"}
+Traveler notes: {data.get("personal_notes") or "None"}
+Live flight and hotel options, when provided, are real inventory search results.
+Do not invent bookings, prices, availability, or provider links. Reflect the
+available options in the trip summary where helpful:
+{json.dumps(data.get("travel_inventory", {}), ensure_ascii=False)[:8000]}
 
 Return exactly this shape, with no markdown or extra keys:
 {{"plans":[{{"tier":"luxury|comfort|budget","summary":"...","estimated_total":0,

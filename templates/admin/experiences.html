@@ -1,0 +1,5 @@
+{% extends "admin/base.html" %}{% set active_page='experiences' %}{% set breadcrumb='Workspace / Experiences' %}
+{% block title %}Experiences · Admin{% endblock %}{% block admin_content %}
+<div class="admin-page-heading"><div><span class="eyebrow">MEMORABLE MOMENTS</span><h1>Experiences</h1><p>Create and publish destination activities for travelers to discover.</p></div><a class="button button-primary" href="{{ url_for('admin.experience_new') }}">＋ Add experience</a></div>
+<section class="admin-panel"><div class="admin-toolbar"><form class="admin-search" action="{{ url_for('admin.experiences') }}" method="get"><label class="sr-only" for="experience-search">Search experiences</label><span>⌕</span><input id="experience-search" name="q" value="{{ request.args.get('q','') }}" placeholder="Search experiences"><button class="button button-outline" type="submit">Search</button></form></div>{% set headings=['Experience','Destination','Price','Status','Updated'] %}{% include "admin/_table.html" %}</section>
+{% endblock %}

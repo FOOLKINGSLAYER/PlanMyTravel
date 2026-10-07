@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
 from typing import Any
-from uuid import uuid4
 
 
 class WalletError(ValueError):
@@ -31,8 +30,8 @@ def add_funds(connection: Any, user_id: int, amount: Any) -> Decimal:
     value = _amount(amount)
     try:
         connection.execute(
-            "INSERT OR IGNORE INTO wallets (id, user_id, balance, currency) VALUES (?, ?, 0, 'INR')",
-            (uuid4().hex, user_id),
+            "INSERT OR IGNORE INTO wallets (user_id, balance, currency) VALUES (?, 0, 'INR')",
+            (user_id,),
         )
         connection.execute(
             "UPDATE wallets SET balance = balance + ? WHERE user_id = ?",
@@ -44,9 +43,9 @@ def add_funds(connection: Any, user_id: int, amount: Any) -> Decimal:
         ).fetchone()
         connection.execute(
             """INSERT INTO wallet_transactions
-               (id, wallet_id, type, amount, status, created_at)
-               VALUES (?, ?, 'top_up', ?, 'completed', CURRENT_TIMESTAMP)""",
-            (uuid4().hex, wallet[0], str(value)),
+               (wallet_id, type, amount, status, created_at)
+               VALUES (?, 'top_up', ?, 'completed', CURRENT_TIMESTAMP)""",
+            (wallet[0], str(value)),
         )
         connection.commit()
     except Exception:
@@ -65,8 +64,8 @@ def charge(
     value = _amount(amount)
     try:
         connection.execute(
-            "INSERT OR IGNORE INTO wallets (id, user_id, balance, currency) VALUES (?, ?, 0, 'INR')",
-            (uuid4().hex, user_id),
+            "INSERT OR IGNORE INTO wallets (user_id, balance, currency) VALUES (?, 0, 'INR')",
+            (user_id,),
         )
         result = connection.execute(
             "UPDATE wallets SET balance = balance - ? WHERE user_id = ? AND balance >= ?",
@@ -80,9 +79,9 @@ def charge(
         ).fetchone()
         connection.execute(
             """INSERT INTO wallet_transactions
-               (id, wallet_id, trip_id, booking_id, type, amount, status, created_at)
-               VALUES (?, ?, ?, ?, 'payment', ?, 'completed', CURRENT_TIMESTAMP)""",
-            (uuid4().hex, wallet[0], trip_id, booking_id, str(value)),
+               (wallet_id, trip_id, booking_id, type, amount, status, created_at)
+               VALUES (?, ?, ?, 'payment', ?, 'completed', CURRENT_TIMESTAMP)""",
+            (wallet[0], trip_id, booking_id, str(value)),
         )
         connection.commit()
     except Exception:

@@ -36,10 +36,18 @@ def _value(file_values: dict[str, str], *names: str, default: str = "") -> str:
 
 def load_config() -> dict[str, object]:
     file_values = _read_env_file()
-    secure_cookie = _value(file_values, "SESSION_COOKIE_SECURE", default="false").lower()
+    flask_env = _value(file_values, "FLASK_ENV", default="development")
+    secure_cookie = _value(
+        file_values,
+        "SESSION_COOKIE_SECURE",
+        default="true" if flask_env.lower() == "production" else "false",
+    ).lower()
     image_dir = Path(_value(file_values, "IMAGES_DIR", default=str(ROOT / "images")))
     if not image_dir.is_absolute():
         image_dir = ROOT / image_dir
+    uploads_dir = Path(_value(file_values, "UPLOADS_DIR", default=str(ROOT / "uploads")))
+    if not uploads_dir.is_absolute():
+        uploads_dir = ROOT / uploads_dir
 
     database_url = _value(
         file_values,
@@ -63,7 +71,7 @@ def load_config() -> dict[str, object]:
     ]
     return {
         "APP_NAME": "PlanMyTravel",
-        "FLASK_ENV": _value(file_values, "FLASK_ENV", default="development"),
+        "FLASK_ENV": flask_env,
         "SECRET_KEY": _value(
             file_values, "FLASK_SECRET_KEY", "SECRET_KEY", default=""
         ),
@@ -74,11 +82,23 @@ def load_config() -> dict[str, object]:
         "GEMINI_MODEL": _value(
             file_values, "GEMINI_MODEL", default="gemini-2.5-flash"
         ),
+        "HOTELBEDS_API_KEY": _value(file_values, "HOTELBEDS_API_KEY"),
+        "HOTELBEDS_API_SECRET": _value(file_values, "HOTELBEDS_API_SECRET"),
+        "HOTELBEDS_BASE_URL": _value(
+            file_values,
+            "HOTELBEDS_BASE_URL",
+            default="https://api.test.hotelbeds.com",
+        ),
+        "SERPAPI_API_KEY": _value(file_values, "SERPAPI_API_KEY"),
+        "CLOUDINARY_CLOUD_NAME": _value(file_values, "CLOUDINARY_CLOUD_NAME"),
+        "CLOUDINARY_API_KEY": _value(file_values, "CLOUDINARY_API_KEY"),
+        "CLOUDINARY_API_SECRET": _value(file_values, "CLOUDINARY_API_SECRET"),
         "TURSO_API_TOKEN": _value(file_values, "TURSO_API_TOKEN"),
         "TURSO_ORG": _value(file_values, "TURSO_ORG"),
         "ADMIN_BOOTSTRAP_EMAIL": _value(file_values, "ADMIN_BOOTSTRAP_EMAIL"),
         "ADMIN_BOOTSTRAP_PASSWORD": _value(file_values, "ADMIN_BOOTSTRAP_PASSWORD"),
         "IMAGES_DIR": str(image_dir),
+        "UPLOADS_DIR": str(uploads_dir),
         "USER_SESSION_MINUTES": int(
             _value(file_values, "USER_SESSION_MINUTES", default="10080")
         ),
@@ -86,5 +106,5 @@ def load_config() -> dict[str, object]:
             _value(file_values, "ADMIN_SESSION_MINUTES", default="60")
         ),
         "SESSION_COOKIE_SECURE": secure_cookie in {"true", "1", "yes"},
-        "MAX_CONTENT_LENGTH": 40 * 1024 * 1024,
+        "MAX_CONTENT_LENGTH": 80 * 1024 * 1024,
     }

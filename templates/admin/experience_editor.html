@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% set active_page = 'experiences' %}
+{% set editing = is_editing|default(experience is defined and experience and experience.id is defined) %}
+{% block title %}{{ 'Edit experience' if editing else 'New experience' }} · Admin{% endblock %}
+{% block admin_content %}
+<div class="admin-page-heading"><div><a class="text-link admin-back-link" href="{{ url_for('admin.experiences') }}">← All experiences</a><span class="eyebrow">MEMORABLE MOMENTS</span><h1>{{ 'Edit experience' if editing else 'Create an experience' }}</h1></div></div>
+{% if errors is defined and errors %}<div class="alert alert-error" role="alert">{% for message in errors.values() %}<div>{{ message }}</div>{% endfor %}</div>{% endif %}
+<form class="admin-editor-form" action="{{ action_url }}" method="post" enctype="multipart/form-data">{{ csrf_token() }}
+  <div class="editor-layout"><div class="editor-main-column"><section class="admin-panel editor-panel"><div class="form-grid">
+    <label class="filter-label span-2">Title<input name="title" required maxlength="160" value="{{ experience.title|default('') }}"></label>
+    <label class="filter-label span-2">Slug<input name="slug" value="{{ experience.slug|default('') }}" placeholder="auto-generated"></label>
+    <label class="filter-label span-2">Description<textarea name="description" rows="7" required>{{ experience.description|default('') }}</textarea></label>
+    <label class="filter-label">Destination<select name="destination"><option value="">Independent experience</option>{% for destination in destinations %}<option value="{{ destination.id }}" {% if editing and experience.destination_id == destination.id %}selected{% endif %}>{{ destination.name }}</option>{% endfor %}</select></label>
+    <label class="filter-label">Category<input name="category" value="{{ experience.category|default('experience') }}"></label>
+    <label class="filter-label">Travel style<input name="travel_style" value="{{ experience.travel_style|default('') }}"></label>
+    <label class="filter-label">Price<input type="number" min="0" step="0.01" name="price" value="{{ experience.price|default(0) }}"></label>
+    <label class="filter-label">Currency<input name="currency" maxlength="3" value="{{ experience.currency|default('SGD') }}"></label>
+  </div></section></div><aside class="editor-side-column"><section class="admin-panel editor-panel">
+    {% if editing and experience.cover_image %}<img class="experience-cover" src="{{ experience.cover_image }}" alt="Current experience cover">{% endif %}
+    <label class="filter-label">Cover image<input type="file" name="cover_image" accept="image/png,image/jpeg,image/webp"></label>
+    <label class="filter-label">Publishing<select name="status">{% for status in ['draft','published','archived'] %}<option value="{{ status }}" {% if experience.status|default('draft') == status %}selected{% endif %}>{{ status|title }}</option>{% endfor %}</select></label>
+  </section></aside></div>
+  <div class="editor-actions"><a class="button button-outline" href="{{ url_for('admin.experiences') }}">Cancel</a><button class="button button-primary" type="submit">{{ 'Save experience' if editing else 'Create experience' }} →</button></div>
+</form>
+{% endblock %}

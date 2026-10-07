@@ -1,0 +1,22 @@
+{% extends "admin/base.html" %}
+{% set active_page = 'guides' %}
+{% set editing = is_editing|default(guide is defined and guide and guide.id is defined) %}
+{% block title %}{{ 'Edit guide' if editing else 'New guide' }} · Admin{% endblock %}
+{% block admin_content %}
+<div class="admin-page-heading"><div><a class="text-link admin-back-link" href="{{ url_for('admin.guides') }}">← All guides</a><span class="eyebrow">LOCAL KNOW-HOW</span><h1>{{ 'Edit guide' if editing else 'Add a travel guide' }}</h1></div></div>
+{% if errors is defined and errors %}<div class="alert alert-error" role="alert">{% for message in errors.values() %}<div>{{ message }}</div>{% endfor %}</div>{% endif %}
+<form class="admin-editor-form" action="{{ action_url }}" method="post" enctype="multipart/form-data">{{ csrf_token() }}
+  <div class="editor-layout"><div class="editor-main-column"><section class="admin-panel editor-panel"><div class="form-grid">
+    <label class="filter-label span-2">Display name<input name="display_name" required maxlength="120" value="{{ guide.display_name|default('') }}"></label>
+    <label class="filter-label span-2">Biography<textarea name="bio" rows="7" required>{{ guide.bio|default('') }}</textarea></label>
+    <label class="filter-label">Languages <small class="field-hint">One per line</small><textarea name="languages" rows="4">{{ guide.languages|default('') }}</textarea></label>
+    <label class="filter-label">Specialties <small class="field-hint">One per line</small><textarea name="specialties" rows="4">{{ guide.specialties|default('') }}</textarea></label>
+  </div></section></div><aside class="editor-side-column"><section class="admin-panel editor-panel">
+    {% if editing and guide.photo %}<img class="experience-cover" src="{{ guide.photo }}" alt="Current guide portrait">{% endif %}
+    <label class="filter-label">Portrait<input type="file" name="photo" accept="image/png,image/jpeg,image/webp"></label>
+    <label class="check-row"><input type="checkbox" name="active" {% if not editing or guide.is_active %}checked{% endif %}> Active and visible to travelers</label>
+    <label class="check-row"><input type="checkbox" name="verified" {% if editing and guide.is_verified %}checked{% endif %}> Verified guide</label>
+  </section></aside></div>
+  <div class="editor-actions"><a class="button button-outline" href="{{ url_for('admin.guides') }}">Cancel</a><button class="button button-primary" type="submit">{{ 'Save guide' if editing else 'Add guide' }} →</button></div>
+</form>
+{% endblock %}

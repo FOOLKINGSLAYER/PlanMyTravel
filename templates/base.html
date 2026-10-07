@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f8fc">
   <title>{% block title %}{{ app_name|default('PlanMyTravel') }}{% endblock %}</title>
-  <meta name="description" content="{% block description %}Thoughtful travel, made just for you. Discover places, plan your trip, and go with confidence.{% endblock %}">
+  <meta name="description" content="{% block description %}{{ site_settings.description|default('Thoughtful travel, made just for you. Discover places, plan your trip, and go with confidence.') }}{% endblock %}">
+  <meta name="csrf-token" content="{{ csrf_value() }}">
   <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/features.css') }}">
   {% block head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -24,13 +26,24 @@
       </a>
       <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open navigation"><span></span><span></span><span></span></button>
       <nav class="primary-nav" id="primary-nav" aria-label="Main navigation">
-        <a href="/search">Explore</a><a href="/guides">Travel guides</a><a href="/pricing">Pricing</a>
+        <a href="/search">Explore</a>
+        <a href="{{ url_for('public.itinerary_form') }}">Plan a trip</a>
+        <a href="/guides">Travel guides</a>
+        <a href="/pricing">Pricing</a>
         <div class="nav-actions">
+          <a class="nav-search-btn" href="/search" aria-label="Search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 4.5a6 6 0 104.5 10.2l4.5 4.5 1.4-1.4-4.5-4.5A6 6 0 0010.5 4.5zm0 2a4 4 0 110 8 4 4 0 010-8z" fill="currentColor"/></svg>
+          </a>
           {% if current_user is defined and current_user %}
-          <a class="nav-link" href="/trips">My trips</a><a class="button button-sm button-primary" href="/account">My account</a>
+          <a class="nav-user-login" href="/account">My account</a>
           {% else %}
-          <a class="nav-link" href="/login">Log in</a><a class="button button-sm button-primary" href="/signup">Get started</a>
+          <a class="nav-user-login" href="/login">Log in</a>
           {% endif %}
+          <a class="admin-login-btn" href="{{ url_for('admin.login') }}">Admin login</a>
+          <a class="profile-menu-btn" href="{{ '/account' if current_user is defined and current_user else '/login' }}" aria-label="{{ 'Open account' if current_user is defined and current_user else 'Log in' }}">
+            <span class="profile-avatar">◔</span>
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
         </div>
       </nav>
     </div>
@@ -41,7 +54,7 @@
       <div><a class="brand brand-light" href="/"><span class="brand-mark">✦</span><span>{{ app_name|default('PlanMyTravel') }}</span></a><p>Good trips start with a little inspiration.</p></div>
       <div><strong>Explore</strong><a href="/search">Destinations</a><a href="/guides">Travel guides</a><a href="/pricing">Plans & pricing</a></div>
       <div><strong>Plan</strong><a href="/itinerary">Build an itinerary</a><a href="/trips">My trips</a><a href="/reviews">Traveler reviews</a></div>
-      <div><strong>Need a hand?</strong><a href="/account">Your account</a><a href="mailto:hello@planmytravel.example">Contact support</a></div>
+      <div><strong>Need a hand?</strong><a href="/account">Your account</a><a href="mailto:{{ site_settings.support_email|default('hello@planmytravel.example') }}">Contact support</a></div>
     </div>
     <div class="container footer-bottom"><span>© {{ current_year|default(2026) }} {{ app_name|default('PlanMyTravel') }}</span><span>Made for the way you travel.</span></div>
   </footer>

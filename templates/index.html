@@ -1,34 +1,123 @@
 {% extends "base.html" %}
 {% block title %}Plan a trip you’ll love · {{ app_name|default('PlanMyTravel') }}{% endblock %}
 {% block content %}
-<section class="hero">
+{% set cruise_package = namespace(item=None) %}
+{% for package in featured_packages|default([]) %}
+  {% set package_name = package.title|default('')|lower %}
+  {% if 'cruise' in package_name or 'disney adventure' in package_name %}
+    {% set cruise_package.item = package %}
+  {% endif %}
+{% endfor %}
+<section class="hero-shell">
   <div class="container hero-grid">
     <div class="hero-copy">
-      <span class="eyebrow eyebrow-pill"><span class="sparkle">✦</span> Introducing Disney Adventure from Singapore</span>
-      <h1>Set sail for <span class="text-gradient">a little magic.</span></h1>
-      <p class="hero-lede">Discover a whole new world at sea. Plan your Disney cruise from Singapore with the moments, onboard favorites, and details your crew will love.</p>
-      <form class="search-panel" action="/search" method="get" role="search">
-        <label class="search-field"><span class="field-icon">⌖</span><span><small>Where to?</small><input name="q" placeholder="Disney Adventure · Singapore" aria-label="Destination"></span></label>
-        <label class="search-field"><span class="field-icon">▦</span><span><small>When</small><input name="date" placeholder="Choose your dates" onfocus="this.type='date'" aria-label="Travel dates"></span></label>
-        <label class="search-field travelers-field"><span class="field-icon">♙</span><span><small>Travelers</small><select name="travelers" aria-label="Number of travelers"><option value="2">2 travelers</option><option value="1">1 traveler</option><option value="3">3 travelers</option><option value="4">4 travelers</option><option value="5">5+ travelers</option></select></span></label>
-        <button class="button button-primary search-submit" type="submit">Explore cruises <span>→</span></button>
-      </form>
-      <div class="hero-proof"><div class="avatar-stack"><span>J</span><span>M</span><span>A</span><span>+</span></div><span><strong>Made for every generation</strong> of your crew</span><span class="proof-rating">★★★★★ <small>guest-loved</small></span></div>
+      <h1>Set sail for<br>a little magic.</h1>
+      <p>Discover a whole new world at sea. Plan your Disney cruise from Singapore with the moments, onboard favorites, and details your crew will love.</p>
     </div>
     <div class="hero-art">
-      <div class="hero-image-wrap"><img src="{{ url_for('images', filename='way finder bay.png') }}" alt="Wayfinder Bay pool deck and screen aboard Disney Adventure"></div>
-      <div class="floating-note note-top"><span class="note-icon">✦</span><span><strong>A ship full of wonder</strong><small>Disney Adventure · Singapore</small></span></div>
-      <div class="floating-note note-bottom"><span class="note-rating">✦</span><span><strong>Room for everyone</strong><small>Shows · dining · sea days</small></span></div>
-      <span class="hero-doodle" aria-hidden="true">✦</span>
+      <img src="{{ url_for('images', filename='way finder bay.png') }}" alt="Wayfinder Bay pool deck and screen aboard Disney Adventure">
     </div>
   </div>
-</section>
-<section class="section section-tight">
-  <div class="container">
-    <div class="section-heading"><div><span class="eyebrow">ALL ABOARD DISNEY ADVENTURE</span><h2>A ship with a story in every corner</h2><p>From imaginative spaces to sunlit sea days, discover what’s waiting onboard.</p></div><a class="text-link" href="/search?q=Disney+Adventure">Explore the cruise <span>→</span></a></div>
-    <div class="card-grid">{% if featured_packages is defined and featured_packages %}{% for package in featured_packages[:3] %}{% include "_package_card.html" %}{% endfor %}{% else %}{% set package = {'title':'Discover a world beneath the waves','location':'Disney Adventure · Discovery Reef','summary':'A vibrant ocean-inspired space made for curious explorers.','image':url_for('images', filename='disney discovery reef.png'),'image_alt':'Colorful Discovery Reef dining and gathering space aboard Disney Adventure','price_text':'Onboard discovery','rating_text':'A sea of color','card_link_text':'See the ship','badge':'Discover onboard','duration':'Day & night'} %}{% include "_package_card.html" %}{% set package = {'title':'Find your wonder at sea','location':'Disney Adventure · Wayfinder Bay','summary':'Stretch out, take in the view, and let the sea-day feeling settle in.','image':url_for('images', filename='way finder bay.png'),'image_alt':'Wayfinder Bay pool deck aboard Disney Adventure','price_text':'Sea-day favorite','rating_text':'Made for relaxing','card_link_text':'See the ship','duration':'All ages'} %}{% include "_package_card.html" %}{% set package = {'title':'Playtime, turned all the way up','location':'Disney Adventure · Toy Story Place','summary':'Make a splash and let the whole family join the fun.','image':url_for('images', filename='toy story place.png'),'image_alt':'Toy Story Place water play area and slide aboard Disney Adventure','price_text':'Family favorite','rating_text':'Made for play','card_link_text':'See the ship','badge':'All together','duration':'All ages'} %}{% include "_package_card.html" %}{% endif %}</div>
+  <div class="container hero-search-wrap">
+    <form class="search-panel" action="/search" method="get" role="search">
+      <label class="search-field">
+        <span class="field-icon">⌖</span>
+        <span class="field-body">
+          <small>Where to?</small>
+          <input name="q" value="Disney Adventure · Singapore" aria-label="Destination">
+        </span>
+      </label>
+      <label class="search-field">
+        <span class="field-icon">▦</span>
+        <span class="field-body">
+          <small>When?</small>
+          <input name="date" placeholder="Choose your dates" aria-label="Travel dates" onfocus="this.type='date'">
+        </span>
+      </label>
+      <label class="search-field travelers-field">
+        <span class="field-icon">♙</span>
+        <span class="field-body">
+          <small>Travelers</small>
+          <select name="travelers" aria-label="Number of travelers">
+            <option value="2" selected>2 travelers</option>
+            <option value="1">1 traveler</option>
+            <option value="3">3 travelers</option>
+            <option value="4">4 travelers</option>
+            <option value="5">5+ travelers</option>
+          </select>
+        </span>
+      </label>
+      <button class="button button-primary search-submit" type="submit">Explore cruises <span>→</span></button>
+    </form>
   </div>
 </section>
-<section class="section how-section"><div class="container"><div class="section-heading centered"><div><span class="eyebrow">YOUR CRUISE, YOUR WAY</span><h2>From “let’s go” to all-aboard.</h2><p>We’ll help you feel ready for the moments that matter.</p></div></div><div class="steps-grid"><article><span class="step-number">01</span><span class="step-emoji">⌕</span><h3>Explore the ship</h3><p>Get a feel for the spaces, experiences, and little details onboard.</p></article><article><span class="step-number">02</span><span class="step-emoji">✎</span><h3>Plan around your crew</h3><p>Shape a flexible cruise plan for your dates, pace, and people.</p></article><article><span class="step-number">03</span><span class="step-emoji">✦</span><h3>Make memories at sea</h3><p>Keep your trip details together, from getting ready to heading home.</p></article></div></div></section>
-<section class="section"><div class="container inspiration-banner"><div><span class="eyebrow">A HOMEPORT FOR ADVENTURE</span><h2>Singapore is where your sea story begins.</h2><p>Step aboard Disney Adventure and discover imaginative spaces, lively family fun, and a fresh view of the horizon.</p><a class="button button-light" href="/destinations/singapore">Explore the Singapore cruise <span>→</span></a></div><img src="{{ url_for('images', filename='disney imagination garden 1.png') }}" alt="The dramatic Imagination Garden atrium aboard Disney Adventure" loading="lazy"></div></section>
+
+<div class="container">
+  <div class="quick-cta">
+    <a class="quick-pill" href="{{ url_for('public.itinerary_form') }}">✦ Plan my trip with AI <span aria-hidden="true">›</span></a>
+    <span class="quick-text">Get a personalized itinerary in seconds</span>
+  </div>
+</div>
+
+<section class="showcase-section">
+  <div class="container showcase-wrap">
+    <figure class="showcase-card">
+      <img src="{{ url_for('images', filename='way finder bay.png') }}" alt="Disney Adventure cruise deck with colorful screen">
+      {% if cruise_package.item %}
+      <button class="save-button{% if cruise_package.item.saved|default(false) %} is-saved{% endif %}" type="button" aria-label="Save Disney Adventure cruise" aria-pressed="{{ 'true' if cruise_package.item.saved|default(false) else 'false' }}" data-save-toggle data-item-type="package" data-item-id="{{ cruise_package.item.id }}">{{ '♥' if cruise_package.item.saved|default(false) else '♡' }}</button>
+      {% endif %}
+      <span class="photo-count">1 / 12</span>
+    </figure>
+    <aside class="showcase-info">
+      <span class="eyebrow">FEATURED CRUISE</span>
+      <h2>Disney Adventure • Singapore</h2>
+      <div class="showcase-metrics">
+        <span>★ 4.8 (1.2k reviews)</span>
+        <span>Singapore</span>
+      </div>
+      <p>Made for every generation of your crew.</p>
+      <div class="feature-badges">
+        <span>🌊 World-class dining</span>
+        <span>🎭 Spectacular shows</span>
+        <span>🛋️ Relaxing sea days</span>
+        <span>👨‍👩‍👧‍👦 Fun for everyone</span>
+      </div>
+      {% if cruise_package.item %}
+      <a class="button button-primary showcase-action" href="{{ url_for('public.package_detail', slug=cruise_package.item.slug) }}">View cruise details <span>→</span></a>
+      {% else %}
+      <a class="button button-primary showcase-action" href="/search?q=Disney+Adventure">Explore cruises <span>→</span></a>
+      {% endif %}
+    </aside>
+  </div>
+</section>
+
+<section class="categories-section">
+  <div class="container category-row">
+    <a class="category-item active" href="/search?q=Disney+Adventure">
+      <span class="category-thumb"><img src="{{ url_for('images', filename='way finder bay.png') }}" alt="Cruises"></span>
+      <span class="category-label">Cruises</span>
+    </a>
+    <a class="category-item" href="/search?q=Beach">
+      <span class="category-thumb"><img src="{{ url_for('images', filename='disney discovery reef.png') }}" alt="Beach"></span>
+      <span class="category-label">Beach</span>
+    </a>
+    <a class="category-item" href="/search?q=Singapore">
+      <span class="category-thumb"><img src="{{ url_for('images', filename='disney imagination garden 1.png') }}" alt="Cities"></span>
+      <span class="category-label">Cities</span>
+    </a>
+    <a class="category-item" href="/search?q=Nature">
+      <span class="category-thumb"><img src="{{ url_for('images', filename='disney imagination garden 2.png') }}" alt="Nature"></span>
+      <span class="category-label">Nature</span>
+    </a>
+    <a class="category-item" href="/search?q=Family">
+      <span class="category-thumb"><img src="{{ url_for('images', filename='toy story place.png') }}" alt="Family"></span>
+      <span class="category-label">Family</span>
+    </a>
+    <a class="category-item" href="/search?q=Luxury">
+      <span class="category-thumb"><img src="{{ url_for('images', filename='disney imagination garden 3.png') }}" alt="Luxury"></span>
+      <span class="category-label">Luxury</span>
+    </a>
+    <button type="button" class="category-nav" aria-label="Show more categories">›</button>
+  </div>
+</section>
 {% endblock %}

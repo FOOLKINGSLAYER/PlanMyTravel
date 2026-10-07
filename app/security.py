@@ -29,14 +29,45 @@ def validate_csrf() -> None:
 def login_required(view: Callable[..., Any]) -> Callable[..., Any]:
     @wraps(view)
     def wrapped(*args: Any, **kwargs: Any) -> Any:
-        if not session.get("user_id"):
+        if not authenticated_user():
             from flask import redirect, url_for
 
             return redirect(url_for("public.login", next=request.full_path))
-        g.user_id = session["user_id"]
         return view(*args, **kwargs)
 
     return wrapped
+
+
+def authenticated_user() -> dict[str, Any] | None:
+    if hasattr(g, "authenticated_user"):
+        return g.authenticated_user
+
+    user_id = session.get("user_id")
+    session_version = session.get("auth_version")
+    user = None
+    if user_id and isinstance(session_version, int):
+        from app.db_utils import query_one
+
+        user = query_one(
+            """SELECT id, email, full_name AS name, profile_image_url,
+                      session_version, is_active
+               FROM users WHERE id = ?""",
+            (user_id,),
+        )
+
+    if (
+        not user
+        or not user.get("is_active")
+        or user.get("session_version") != session_version
+    ):
+        session.pop("user_id", None)
+        session.pop("auth_version", None)
+        user = None
+    else:
+        g.user_id = user["id"]
+
+    g.authenticated_user = user
+    return user
 
 
 def admin_required(*roles: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:

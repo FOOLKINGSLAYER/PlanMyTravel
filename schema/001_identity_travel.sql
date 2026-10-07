@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     emergency_contact_phone TEXT,
     role TEXT NOT NULL DEFAULT 'traveler',
     is_active INTEGER NOT NULL DEFAULT 1,
+    session_version INTEGER NOT NULL DEFAULT 1,
     email_verified_at TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -91,6 +92,7 @@ CREATE TABLE IF NOT EXISTS itinerary_days (
     title TEXT,
     summary TEXT,
     notes TEXT,
+    weather_json TEXT,
     metadata_json TEXT NOT NULL DEFAULT '{}',
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (plan_id, day_number)
@@ -106,7 +108,12 @@ CREATE TABLE IF NOT EXISTS itinerary_items (
     end_time TEXT,
     sort_order INTEGER NOT NULL DEFAULT 0,
     item_type TEXT NOT NULL DEFAULT 'activity',
+    category TEXT,
+    duration_min INTEGER,
     estimated_cost REAL,
+    lat REAL,
+    lng REAL,
+    route_from_prev_json TEXT,
     currency TEXT NOT NULL DEFAULT 'USD',
     metadata_json TEXT NOT NULL DEFAULT '{}',
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,

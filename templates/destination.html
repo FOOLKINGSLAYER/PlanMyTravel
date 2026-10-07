@@ -1,7 +1,75 @@
 {% extends "base.html" %}
-{% block title %}{{ destination.name|default('Singapore') }} travel guide · {{ app_name|default('PlanMyTravel') }}{% endblock %}
+{% block title %}{{ destination.name }} travel guide · {{ app_name|default('PlanMyTravel') }}{% endblock %}
 {% block content %}
-<section class="destination-hero"><img src="{{ destination.hero_image|default(url_for('images', filename='way finder bay.png')) }}" alt="{{ destination.name|default('Singapore') }} travel highlights"><div class="destination-overlay"><div class="container"><span class="eyebrow eyebrow-light">DESTINATION GUIDE</span><h1>{{ destination.name|default('Singapore') }}</h1><p>{{ destination.tagline|default('A city of big flavors, lush gardens, and unforgettable family adventures.') }}</p><a class="button button-light" href="/search?destination=singapore">Explore trips <span>→</span></a></div></div></section>
-<section class="section"><div class="container content-columns"><article class="prose"><span class="eyebrow">THE TRAVELER’S EDIT</span><h2>{{ destination.heading|default('Small island. A whole world of discovery.') }}</h2><p>{{ destination.description|default('Singapore pairs a wonderfully easy city break with a rich mix of cultures, food, and green spaces. Wander from a calm garden morning to lively waterfront evenings, with plenty of memorable stops for every age in between.') }}</p><h3>Make the most of your visit</h3><ul><li>Leave room in the day for a spontaneous food stop.</li><li>Mix famous sights with slower neighborhood exploring.</li><li>Plan indoor breaks around the warmest hours.</li></ul></article><aside class="side-card"><h3>At a glance</h3><dl><div><dt>Best for</dt><dd>Families, food lovers, city explorers</dd></div><div><dt>Ideal stay</dt><dd>3–5 days</dd></div><div><dt>Getting around</dt><dd>Simple, connected public transit</dd></div></dl><a class="text-link" href="/itinerary">Build an itinerary →</a></aside></div></section>
-<section class="section section-tight"><div class="container"><div class="section-heading"><div><span class="eyebrow">OUR PICKS</span><h2>Trips in {{ destination.name|default('Singapore') }}</h2></div></div><div class="card-grid">{% if packages is defined and packages %}{% for package in packages %}{% include "_package_card.html" %}{% endfor %}{% else %}{% set package={'title':'Disney Adventure Singapore','location':'Singapore · 4 days','summary':'A playful island escape with something for everyone.','image':url_for('images', filename='disney imagination garden 1.png'),'price':'$1,240','rating':'4.9','review_count':128,'duration':'4 days'} %}{% include "_package_card.html" %}{% endif %}</div></div></section>
+<section class="destination-hero">
+  <img src="{{ destination.hero_image }}" alt="{{ destination.name }} travel highlights">
+  <div class="destination-overlay"><div class="container">
+    <span class="eyebrow eyebrow-light">DESTINATION GUIDE{% if destination.country %} · {{ destination.country }}{% endif %}</span>
+    <h1>{{ destination.name }}</h1>
+    <p>{{ destination.tagline or destination.short_description or destination.description }}</p>
+    <div class="destination-actions">
+      <a class="button button-light" href="{{ url_for('public.search', q=destination.name) }}">Explore trips <span>→</span></a>
+      <a class="button button-light" href="{{ url_for('public.itinerary_form', destination=destination.name) }}">Plan a trip <span>✦</span></a>
+      <button class="button button-light{% if favorite %} is-saved{% endif %}" type="button" aria-pressed="{{ 'true' if favorite else 'false' }}" data-save-toggle data-item-type="destination" data-item-id="{{ destination.id }}">{{ '♥ Saved' if favorite else '♡ Save destination' }}</button>
+    </div>
+  </div></div>
+</section>
+<section class="section">
+  <div class="container content-columns">
+    <article class="prose">
+      <span class="eyebrow">THE TRAVELER’S EDIT</span>
+      <h2>{{ destination.name }}{% if destination.city %}: {{ destination.city }}{% endif %}</h2>
+      <p>{{ destination.description or destination.short_description }}</p>
+      {% if destination.attractions %}<h3>Attractions</h3><ul>{% for attraction in destination.attractions %}<li>{{ attraction }}</li>{% endfor %}</ul>{% endif %}
+      {% if destination.activities %}<h3>Activities</h3><ul>{% for activity in destination.activities %}<li>{{ activity }}</li>{% endfor %}</ul>{% endif %}
+    </article>
+    <aside class="side-card">
+      <h3>At a glance</h3>
+      <dl>
+        {% if destination.best_season %}<div><dt>Best travel season</dt><dd>{{ destination.best_season }}</dd></div>{% endif %}
+        {% if destination.ideal_stay %}<div><dt>Ideal stay</dt><dd>{{ destination.ideal_stay }}</dd></div>{% endif %}
+        {% if destination.category %}<div><dt>Category</dt><dd>{{ destination.category }}</dd></div>{% endif %}
+        {% if destination.estimated_cost_min is not none or destination.estimated_cost_max is not none %}<div><dt>Estimated travel cost</dt><dd>{{ destination.cost_currency }} {{ destination.estimated_cost_min|default('—', true) }}{% if destination.estimated_cost_max is not none %} – {{ destination.estimated_cost_max }}{% endif %}</dd></div>{% endif %}
+        {% if destination.weather_info %}<div><dt>Weather</dt><dd>{{ destination.weather_info }}</dd></div>{% endif %}
+        {% if destination.travel_styles %}<div><dt>Travel styles</dt><dd>{{ destination.travel_styles|join(', ') }}</dd></div>{% endif %}
+      </dl>
+    </aside>
+  </div>
+</section>
+<section class="section section-tight">
+  <div class="container">
+    <div class="section-heading"><div><span class="eyebrow">IMAGE GALLERY</span><h2>See {{ destination.name }}</h2></div></div>
+    <div class="destination-gallery" data-gallery>
+      <div class="gallery-stage">
+        {% for image in destination.gallery %}<img class="gallery-image{% if loop.first %} is-active{% endif %}" src="{{ image.url }}" alt="{{ image.alt }}" {% if not loop.first %}hidden loading="lazy"{% endif %} data-gallery-image>{% endfor %}
+        <button class="gallery-control gallery-previous" type="button" aria-label="Previous image" data-gallery-prev>‹</button>
+        <button class="gallery-control gallery-next" type="button" aria-label="Next image" data-gallery-next>›</button>
+        <button class="gallery-fullscreen" type="button" data-gallery-open>View fullscreen</button>
+        <span class="gallery-counter" aria-live="polite" data-gallery-counter>1 / {{ destination.gallery|length }}</span>
+      </div>
+      <div class="gallery-thumbnails" aria-label="Gallery thumbnails">
+        {% for image in destination.gallery %}<button type="button" class="gallery-thumbnail{% if loop.first %} is-active{% endif %}" aria-label="Show image {{ loop.index }}" aria-pressed="{{ 'true' if loop.first else 'false' }}" data-gallery-thumb="{{ loop.index0 }}"><img src="{{ image.url }}" alt="" loading="lazy"></button>{% endfor %}
+      </div>
+    </div>
+    <dialog class="gallery-lightbox" data-gallery-dialog aria-label="Destination image gallery">
+      <button type="button" class="lightbox-close" aria-label="Close gallery" data-gallery-close>×</button>
+      <button type="button" class="gallery-control gallery-previous" aria-label="Previous image" data-gallery-prev>‹</button>
+      <img src="{{ destination.gallery[0].url }}" alt="{{ destination.gallery[0].alt }}" data-lightbox-image>
+      <button type="button" class="gallery-control gallery-next" aria-label="Next image" data-gallery-next>›</button>
+      <span class="gallery-counter" data-lightbox-counter>1 / {{ destination.gallery|length }}</span>
+    </dialog>
+  </div>
+</section>
+{% if packages %}
+<section class="section section-tight"><div class="container"><div class="section-heading"><div><span class="eyebrow">OUR PICKS</span><h2>Recommended packages</h2></div></div><div class="card-grid">{% for package in packages %}{% include "_package_card.html" %}{% endfor %}</div></div></section>
+{% endif %}
+{% if experiences %}
+<section class="section section-tight"><div class="container"><div class="section-heading"><div><span class="eyebrow">DO SOMETHING MEMORABLE</span><h2>Experiences in {{ destination.name }}</h2></div></div><div class="card-grid">{% for experience in experiences %}<article class="package-card"><a class="package-image" href="{{ url_for('public.experience_detail', slug=experience.slug) }}"><img src="{{ resolve_image(experience.cover_image_url) if resolve_image is defined else url_for('images', filename='placeholders/default.jpg') }}" alt="{{ experience.title }}" loading="lazy"></a><div class="package-info"><h3><a href="{{ url_for('public.experience_detail', slug=experience.slug) }}">{{ experience.title }}</a></h3><p>{{ experience.description }}</p><div class="price-row"><span>From <strong>{{ experience.currency }} {{ experience.price }}</strong></span><a class="text-link" href="{{ url_for('public.experience_detail', slug=experience.slug) }}">Explore →</a></div></div></article>{% endfor %}</div></div></section>
+{% endif %}
+{% if guides %}
+<section class="section section-soft"><div class="container"><div class="section-heading"><div><span class="eyebrow">LOCAL KNOW-HOW</span><h2>Travel guides</h2></div><a class="text-link" href="{{ url_for('public.guides', q=destination.name) }}">All guides →</a></div><div class="card-grid">{% for guide in guides %}<article class="side-card"><span class="eyebrow">LOCAL GUIDE</span><h3>{{ guide.name }}</h3><p>{{ guide.bio }}</p><a class="text-link" href="{{ url_for('public.guide_profile', guide_id=guide.id) }}">Meet {{ guide.name }} →</a></article>{% endfor %}</div></div></section>
+{% endif %}
+{% if reviews %}
+<section class="section"><div class="container"><div class="section-heading"><div><span class="eyebrow">TRAVELER STORIES</span><h2>Reviews of {{ destination.name }}</h2></div><a class="text-link" href="{{ url_for('public.reviews') }}">All reviews →</a></div><div class="card-grid">{% for review in reviews %}<article class="side-card"><div class="package-meta"><span>{{ '★' * review.rating }}</span><span>{{ review.reviewer_name }}</span></div><h3>{{ review.title }}</h3><p>{{ review.body }}</p></article>{% endfor %}</div></div></section>
+{% endif %}
 {% endblock %}

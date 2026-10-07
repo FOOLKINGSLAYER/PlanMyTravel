@@ -1,6 +1,115 @@
 {% extends "base.html" %}
-{% block title %}Build your itinerary · {{ app_name|default('PlanMyTravel') }}{% endblock %}
+{% block title %}Plan a trip with AI · {{ app_name|default('PlanMyTravel') }}{% endblock %}
+{% block body_class %}itinerary-planner-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/itinerary-planner.css') }}">{% endblock %}
 {% block content %}
-<section class="page-hero"><div class="container narrow"><span class="eyebrow">YOUR TRIP, YOUR RHYTHM</span><h1>Let’s make a plan.</h1><p>Tell us a little about your trip. We’ll help turn your ideas into a day-by-day itinerary.</p></div></section>
-<section class="section section-tight"><div class="container narrow"><form class="form-card" action="/itinerary/results" method="post">{{ csrf_token() }}<div class="form-grid"><label class="filter-label span-2">Where are you going?<input name="destination" placeholder="City or destination" required value="{{ destination|default('') }}"></label><label class="filter-label">Arrival date<input type="date" name="start_date" required></label><label class="filter-label">Departure date<input type="date" name="end_date" required></label><label class="filter-label">Travelers<select name="travelers"><option>2 travelers</option><option>1 traveler</option><option>3 travelers</option><option>4 travelers</option></select></label><label class="filter-label">Trip pace<select name="pace"><option>Balanced</option><option>Relaxed</option><option>See it all</option></select></label><fieldset class="span-2"><legend>What are you into?</legend><div class="choice-chips">{% for interest in ['Food & drink','Culture','Nature','Family fun','Shopping','Adventure'] %}<label><input type="checkbox" name="interests" value="{{ interest }}"><span>{{ interest }}</span></label>{% endfor %}</div></fieldset><label class="filter-label span-2">Anything else we should know?<textarea name="notes" rows="3" placeholder="Accessibility needs, favorite activities, must-sees…"></textarea></label></div><button class="button button-primary button-full" type="submit">Create my itinerary <span>→</span></button><p class="form-footnote">You can edit every detail after we make your first draft.</p></form></div></section>
+<section class="planner-hero" style="--planner-hero-image: url('{{ url_for('images', filename='disney imagination garden 1.png') }}')">
+  <div class="container planner-hero-grid">
+    <div class="planner-intro">
+      <span class="planner-eyebrow"><span aria-hidden="true">✦</span> AI TRIP PLANNER</span>
+      <h1>Plan your trip<br>with AI</h1>
+      <p>Tell us your destination, dates and preferences. Our AI creates a personalized itinerary with experiences, stays, travel tips and more.</p>
+      <div class="planner-benefits">
+        <span><i aria-hidden="true">✦</i> Personalized<br>itineraries</span>
+        <span><i aria-hidden="true">⌖</i> Curated<br>experiences</span>
+        <span><i aria-hidden="true">₹</i> Budget<br>estimates</span>
+        <span><i aria-hidden="true">✈</i> Real-time<br>travel tips</span>
+      </div>
+    </div>
+
+    <div class="planner-panel" id="planner-form">
+      <nav class="planner-tabs" aria-label="Trip planning sections">
+        <a class="is-active" href="#planner-form" aria-current="page"><span aria-hidden="true">✦</span> AI Plan</a>
+        <a href="#flight-details"><span aria-hidden="true">✈</span> Flights</a>
+        <a href="#stay-details"><span aria-hidden="true">▤</span> Stays</a>
+        <a href="#experience-details"><span aria-hidden="true">◇</span> Experiences</a>
+      </nav>
+      {% if error is defined and error %}<div class="alert alert-error" role="alert">{{ error }}</div>{% endif %}
+      <form action="{{ url_for('public.itinerary_results_post') }}" method="post" class="planner-form">
+        {{ csrf_token() }}
+        <div class="planner-primary-fields">
+          <label class="planner-field" id="stay-details">
+            <span class="planner-field-icon" aria-hidden="true">⌖</span>
+            <span><small>Where to?</small>
+              {% set selected_destination = request.form.get('destination', pending_itinerary.get('destination', destination|default(''))) %}
+              {% set destination_options = destinations|default([]) %}
+              {% set destination_names = destination_options|map(attribute='name')|list %}
+              <select name="destination" required aria-label="Choose a destination">
+                <option value="">Choose a destination</option>
+                {% if selected_destination and selected_destination not in destination_names %}
+                <option value="{{ selected_destination }}" selected>{{ selected_destination }} (not in the destination list)</option>
+                {% endif %}
+                {% for item in destination_options %}
+                <option value="{{ item.name }}" {% if selected_destination == item.name %}selected{% endif %}>{{ item.name }}{% if item.country %}, {{ item.country }}{% endif %}</option>
+                {% endfor %}
+              </select>
+            </span>
+          </label>
+          <label class="planner-field planner-date-field">
+            <span class="planner-field-icon" aria-hidden="true">▦</span>
+            <span><small>Travel dates</small>
+              <span class="planner-dates">
+                <input type="date" name="start_date" aria-label="Trip start date" required value="{{ request.form.get('start_date', pending_itinerary.get('start_date', '')) }}">
+                <span aria-hidden="true">–</span>
+                <input type="date" name="end_date" aria-label="Trip end date" required value="{{ request.form.get('end_date', pending_itinerary.get('end_date', '')) }}">
+              </span>
+            </span>
+          </label>
+          <label class="planner-field planner-travelers">
+            <span class="planner-field-icon" aria-hidden="true">♙</span>
+            <span><small>Travelers</small>
+              <select name="travelers" aria-label="Number of travelers">
+                {% for number in range(1, 10) %}<option value="{{ number }}" {% if request.form.get('travelers', pending_itinerary.get('travelers', '2'))|int == number %}selected{% endif %}>{{ number }} {{ 'traveler' if number == 1 else 'travelers' }}</option>{% endfor %}
+              </select>
+            </span>
+          </label>
+        </div>
+        <div class="planner-primary-fields planner-flight-fields" id="flight-details">
+          <label class="planner-field planner-airport">
+            <span class="planner-field-icon" aria-hidden="true">✈</span>
+            <span><small>Departure airport code (optional)</small><input name="origin" placeholder="e.g. BOM" maxlength="3" pattern="[A-Za-z]{3}" value="{{ request.form.get('origin', pending_itinerary.get('origin', '')) }}" aria-describedby="flight-codes-help"></span>
+          </label>
+          <label class="planner-field planner-airport">
+            <span class="planner-field-icon" aria-hidden="true">✈</span>
+            <span><small>Arrival airport code (optional)</small><input name="flight_destination" placeholder="e.g. SIN" maxlength="3" pattern="[A-Za-z]{3}" value="{{ request.form.get('flight_destination', pending_itinerary.get('flight_destination', '')) }}" aria-describedby="flight-codes-help"></span>
+          </label>
+        </div>
+        <p id="flight-codes-help" class="planner-hint">Enter both three-letter IATA airport codes to search flights. Hotel offers are searched automatically for the selected destination and dates.</p>
+        <div class="planner-prompt-row">
+          <label class="planner-prompt">
+            <span aria-hidden="true">✦</span>
+            <input name="notes" aria-label="Describe the trip you want" placeholder="A fun trip with good food, must-visit places and a balanced itinerary..." value="{{ request.form.get('notes', pending_itinerary.get('notes', '')) }}">
+          </label>
+          <button class="button button-primary planner-submit" type="submit">Generate with AI <span aria-hidden="true">→</span></button>
+        </div>
+
+        <details class="planner-extra-details">
+          <summary>More trip preferences <span aria-hidden="true">⌄</span></summary>
+          <div class="planner-extra-grid">
+            <label class="planner-field">
+              <span><small>Total trip budget (INR)</small><input type="number" name="total_budget" min="1" max="100000000" step="1" value="{{ request.form.get('total_budget', pending_itinerary.get('total_budget', '100000')) }}"></span>
+            </label>
+            <label class="planner-field">
+              <span><small>Trip pace</small>
+                {% set selected_pace = request.form.get('pace', pending_itinerary.get('pace', 'Balanced')) %}
+                <select name="pace"><option {% if selected_pace == 'Balanced' %}selected{% endif %}>Balanced</option><option {% if selected_pace == 'Relaxed' %}selected{% endif %}>Relaxed</option><option {% if selected_pace == 'See it all' %}selected{% endif %}>See it all</option></select>
+              </span>
+            </label>
+            {% set selected_interests = request.form.getlist('interests') or pending_itinerary.get('interests', []) %}
+            <fieldset class="planner-interests" id="experience-details">
+              <legend>Experiences you enjoy</legend>
+              <div class="planner-interest-chips">{% for interest in ['Food & drink','Culture','Nature','Family fun','Shopping','Adventure'] %}<label><input type="checkbox" name="interests" value="{{ interest }}" {% if interest in selected_interests %}checked{% endif %}><span>{{ interest }}</span></label>{% endfor %}</div>
+            </fieldset>
+          </div>
+        </details>
+      </form>
+    </div>
+  </div>
+  <div class="container planner-ideas">
+    <span>Try these:</span>
+    {% for prompt in ['Disney adventure in Singapore','5 day Bali trip under ₹50k','Romantic trip to Switzerland','Solo trip to Japan','Family trip to Dubai'] %}
+    <button type="button" data-trip-prompt="{{ prompt }}">{{ prompt }}</button>
+    {% endfor %}
+  </div>
+</section>
 {% endblock %}

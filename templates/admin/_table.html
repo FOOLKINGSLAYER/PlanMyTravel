@@ -1,3 +1,8 @@
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr>{% for heading in headings %}<th scope="col">{{ heading }}</th>{% endfor %}<th scope="col">Actions</th></tr></thead><tbody>
-{% if rows is defined and rows %}{% for row in rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}<td><a class="table-action" href="{{ row.url|default('#') }}">Edit</a><button class="table-action table-action-muted" type="button">More</button></td></tr>{% endfor %}{% else %}{% for row in fallback_rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}<td><a class="table-action" href="#">Edit</a><button class="table-action table-action-muted" type="button">More</button></td></tr>{% endfor %}{% endif %}
+{% if rows is defined %}
+  {% for row in rows %}<tr>{% for cell in row.cells %}<td>{{ cell }}</td>{% endfor %}<td><div class="admin-row-actions">{% if row.editable|default(true) %}<a class="table-action" href="{{ row.url }}">Edit</a>{% endif %}{% if row.delete_url is defined %}<form class="admin-inline-action" action="{{ row.delete_url }}" method="post">{{ csrf_token() }}<button type="submit" data-confirm="{{ row.confirm|default('Update this record?') }}">{{ row.action_label|default('Archive') }}</button></form>{% endif %}</div></td></tr>
+  {% else %}<tr><td colspan="{{ headings|length + 1 }}" class="admin-list-empty">No records found.</td></tr>{% endfor %}
+{% else %}
+  {% for row in fallback_rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}<td><span class="muted">—</span></td></tr>{% endfor %}
+{% endif %}
 </tbody></table></div>

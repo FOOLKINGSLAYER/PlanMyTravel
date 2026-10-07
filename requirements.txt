@@ -1,4 +1,5 @@
 Flask>=3.0,<4.0
+cloudinary>=1.36,<2.0
 libsql>=0.1.11
 Pillow>=10.0
 python-dotenv>=1.0

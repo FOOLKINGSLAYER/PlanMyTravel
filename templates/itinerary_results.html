@@ -1,6 +1,157 @@
 {% extends "base.html" %}
-{% block title %}Your itinerary · {{ app_name|default('PlanMyTravel') }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/itinerary-planner.css') }}">{% endblock %}
+{% block body_class %}itinerary-results-page{% endblock %}
+{% block title %}Your AI trip plan · {{ app_name|default('PlanMyTravel') }}{% endblock %}
 {% block content %}
-<section class="page-hero page-hero-small"><div class="container"><span class="eyebrow">YOUR FIRST DRAFT IS READY</span><h1>{{ itinerary.title|default('Your Singapore itinerary') }}</h1><p>{{ itinerary.start_date|default('Your dates') }} · {{ itinerary.days|default(3) }} days · Made around your travel style</p><div class="hero-actions"><a class="button button-primary" href="/itinerary/edit">Edit itinerary ✎</a><button class="button button-outline" type="button" onclick="window.print()">Print or save PDF</button></div></div></section>
-<section class="section section-tight"><div class="container timeline-page">{% if itinerary.days_list is defined and itinerary.days_list %}{% for day in itinerary.days_list %}<article class="day-card"><div class="day-label">DAY {{ loop.index }}<small>{{ day.date|default('') }}</small></div><div class="day-content"><h2>{{ day.title|default('A day to discover') }}</h2>{% for activity in day.activities|default([]) %}<div class="activity-row"><span class="activity-time">{{ activity.time|default('10:00') }}</span><div><strong>{{ activity.title|default('Explore at your own pace') }}</strong><p>{{ activity.description|default('A lovely way to spend part of your day.') }}</p></div></div>{% endfor %}</div></article>{% endfor %}{% else %}{% for item in [('1','Find your Singapore rhythm','Arrive, settle in, and explore the neighborhood.'),('2','A day of wonder','Spend the day discovering Disney Adventure and its many worlds.'),('3','One last city adventure','Enjoy a leisurely morning and a favorite local meal.') ] %}<article class="day-card"><div class="day-label">DAY {{ item[0] }}<small>Suggested plan</small></div><div class="day-content"><h2>{{ item[1] }}</h2><div class="activity-row"><span class="activity-time">10:00</span><div><strong>{{ item[1] }}</strong><p>{{ item[2] }}</p></div></div><button class="text-link" type="button">＋ Add an activity</button></div></article>{% endfor %}{% endif %}</div></section>
+{% set destination_name = trip.destination_name|default(itinerary.title|default('Your destination')) %}
+{% set fallback_image = url_for('images', filename='disney imagination garden 1.png') %}
+{% set hero_image = inventory.hotels[0].image_url if inventory and inventory.hotels and inventory.hotels[0].image_url else fallback_image %}
+<section class="trip-result-hero">
+  <img src="{{ hero_image }}" alt="{{ ('Hotel stay in ' ~ destination_name ~ ', image provided by Hotelbeds') if inventory and inventory.hotels and inventory.hotels[0].image_url else ('A scenic view in ' ~ destination_name) }}">
+  <div class="container trip-result-hero-content">
+    <div>
+      <span class="planner-eyebrow"><span aria-hidden="true">✦</span> YOUR AI TRIP PLAN</span>
+      <h1>{{ destination_name }}</h1>
+      <p>{{ trip.start_date }} · {{ itinerary.days|default(3) }} days · {{ trip.travelers }} travelers · Made around your travel style</p>
+    </div>
+    <div class="trip-result-actions">
+      <a class="button" href="{{ url_for('public.itinerary_form', destination=destination_name) }}">↻ Regenerate</a>
+      <button class="button" type="button" data-share-trip>↗ Share</button>
+      <button class="button" type="button" data-print-page>▧ Print</button>
+      <a class="button button-primary" href="{{ url_for('public.trip_dashboard', trip_id=trip.id) }}">♡ Save trip</a>
+    </div>
+  </div>
+</section>
+
+<main class="container trip-result-main">
+  <section aria-labelledby="trip-plan-heading">
+    <div class="trip-section-heading">
+      <h2 id="trip-plan-heading" class="trip-section-kicker"><span aria-hidden="true">✦</span> Your AI trip plan</h2>
+      <a class="text-link" href="{{ url_for('public.itinerary_editor', trip_id=trip.id) }}">Edit itinerary <span aria-hidden="true">→</span></a>
+    </div>
+
+    <div class="trip-result-columns">
+      <nav class="trip-day-list" aria-label="Itinerary days">
+        {% for day in itinerary.days_list %}
+        <a class="trip-day-link{% if loop.first %} is-active{% endif %}" href="#day-{{ loop.index }}">
+          <span class="trip-day-thumb"><img src="{{ url_for('images', filename=['disney imagination garden 1.png','disney discovery reef.png','toy story place.png'][loop.index0 % 3]) }}" alt="" loading="lazy"></span>
+          <span><strong>Day {{ loop.index }}</strong><small>{{ day.title|default('Explore at your own pace') }}</small></span>
+          <span aria-hidden="true">›</span>
+        </a>
+        {% endfor %}
+      </nav>
+
+      <div class="trip-day-panels">
+        {% for day in itinerary.days_list %}
+        <article class="trip-day-detail" id="day-{{ loop.index }}">
+          <div class="trip-day-detail-head"><span>DAY {{ loop.index }}</span><small>{{ day.date }}</small></div>
+          <h3>{{ day.title|default('A day to discover') }}</h3>
+          <p>{{ day.activities[0].description|default('Explore the destination, settle in, and enjoy a day planned around your interests.') if day.activities else 'Explore the destination and enjoy a day planned around your interests.' }}</p>
+          {% if day.activities %}
+          <div class="trip-activities">
+            {% for activity in day.activities[:3] %}
+            <article class="trip-activity-card">
+              <img src="{{ url_for('images', filename=['disney imagination garden 1.png','disney discovery reef.png','toy story place.png'][loop.index0 % 3]) }}" alt="" loading="lazy">
+              <span class="trip-activity-caption"><strong>{{ activity.title|default('Explore at your own pace') }}</strong><small>{{ activity.time|default('Flexible timing') }}{% if activity.cost %} · {{ activity.cost }}{% endif %}</small></span>
+            </article>
+            {% endfor %}
+          </div>
+          {% endif %}
+          <div class="trip-ai-tip"><strong>✦ AI tip</strong><span>{{ day.activities[0].description|default('Keep some flexibility in your day for a spontaneous local discovery.') if day.activities else 'Keep some flexibility in your day for a spontaneous local discovery.' }}</span></div>
+          <a class="text-link" href="{{ url_for('public.itinerary_editor', trip_id=trip.id) }}">Edit this day <span aria-hidden="true">→</span></a>
+        </article>
+        {% endfor %}
+      </div>
+
+      <aside class="trip-side-stack">
+        <section class="trip-map-card" aria-label="Map of {{ destination_name }}">
+          <iframe class="trip-map-frame" title="Map of {{ destination_name }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q={{ destination_name|urlencode }}&amp;output=embed"></iframe>
+          <a class="trip-map-link" href="https://www.openstreetmap.org/search?query={{ destination_name|urlencode }}" target="_blank" rel="noopener noreferrer">Open {{ destination_name }} map ↗</a>
+        </section>
+        <section class="trip-overview-card">
+          <h3>▣ Trip overview</h3>
+          <div class="trip-overview-line"><span>▦</span><span>{{ itinerary.days|default(3) }} days · {{ [itinerary.days|default(3) - 1, 0]|max }} nights</span></div>
+          <div class="trip-overview-line"><span>♙</span><span>{{ trip.travelers }} travelers</span></div>
+          <div class="trip-overview-line"><span>₹</span><span>Estimated budget</span><strong>₹{{ "{:,.0f}".format(trip.total_budget|default(0, true)) }}</strong></div>
+          <div class="trip-overview-actions">
+            <a class="button button-outline" href="{{ url_for('public.itinerary_form', destination=destination_name) }}">Edit preferences</a>
+            <a class="button button-primary" href="{{ url_for('public.trip_dashboard', trip_id=trip.id) }}">View trip</a>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </section>
+
+  <section class="trip-offers-section" id="hotel-offers">
+    <div class="trip-section-heading">
+      <h2>Recommended stays</h2>
+      <span class="small muted">Hotelbeds · {{ trip.start_date }} to {{ trip.end_date }}</span>
+    </div>
+    {% if inventory.hotel_status == 'available' and inventory.hotels %}
+    <div class="trip-offers-grid">
+      {% for hotel in inventory.hotels %}
+      <article class="trip-hotel-card">
+        <img src="{{ hotel.image_url|default(url_for('images', filename='placeholders/default.jpg')) }}" alt="{{ hotel.name }} hotel photo{% if hotel.image_url %} provided by Hotelbeds{% endif %}" loading="lazy">
+        <div class="trip-hotel-info">
+          <span>{{ hotel.category|default('Hotel stay') }}</span>
+          <h3>{{ hotel.name }}</h3>
+          <p>{{ hotel.room|default('Room offer') }}{% if hotel.board %} · {{ hotel.board }}{% endif %}</p>
+          <div class="trip-hotel-price"><span>From {{ hotel.currency }} {{ hotel.price }}</span><span>{{ hotel.check_in }} – {{ hotel.check_out }}</span></div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% elif inventory.hotel_status == 'no_results' %}
+    <p class="trip-no-results">No hotel offers were returned for these dates. Try adjusting your trip dates or destination.</p>
+    {% else %}
+    <p class="trip-no-results">{{ inventory.hotel_notice }}</p>
+    {% endif %}
+  </section>
+
+  <section class="trip-offers-section" id="flight-offers">
+    <div class="trip-section-heading">
+      <h2>Flight options</h2>
+      <span class="small muted">SerpApi · {{ inventory.origin_code }} to {{ inventory.destination_code }}</span>
+    </div>
+    {% if inventory.flight_status == 'available' and inventory.flights %}
+    <div class="package-includes-card">
+      <div class="package-inventory-list">
+        {% for flight in inventory.flights %}
+        <article class="package-inventory-offer">
+          <div><strong>{{ flight.legs[0].airline|default('Flight') if flight.legs else 'Flight' }}</strong><span>{{ flight.legs|length }} leg{{ '' if flight.legs|length == 1 else 's' }} · {{ flight.stops|default(0) }} stop{{ '' if flight.stops|default(0) == 1 else 's' }}</span>{% for leg in flight.legs %}<small>{{ leg.from }} {{ leg.departure }} → {{ leg.to }} {{ leg.arrival }}{% if leg.duration %} · {{ leg.duration }}{% endif %}</small>{% endfor %}</div>
+          <b>{{ flight.currency }} {{ flight.price }}</b>
+        </article>
+        {% endfor %}
+      </div>
+    </div>
+    {% elif inventory.flight_status == 'no_results' %}
+    <p class="trip-no-results">No flight offers were returned for these dates and airports.</p>
+    {% else %}
+    <p class="trip-no-results">{{ inventory.flight_notice }}</p>
+    {% endif %}
+    <p class="trip-inventory-notice">These are search results, not reservations. Hotel availability and fares must be rechecked before booking.</p>
+  </section>
+  <section class="trip-offers-section">
+    <div class="trip-section-heading"><h2>Recommended for your trip</h2></div>
+    <div class="trip-recommendations">
+      {% set first_hotel = inventory.hotels[0] if inventory and inventory.hotels else none %}
+      <a class="trip-recommendation" href="{{ '#hotel-offers' if inventory else '/search?q=hotels' }}">
+        <img src="{{ first_hotel.image_url if first_hotel and first_hotel.image_url else url_for('images', filename='placeholders/default.jpg') }}" alt="" loading="lazy">
+        <span><strong>Stays</strong><small>{{ first_hotel.name if first_hotel else 'Hotel offers for your dates' }}</small></span><span aria-hidden="true">›</span>
+      </a>
+      <a class="trip-recommendation" href="/search?q=experiences">
+        <img src="{{ url_for('images', filename='toy story place.png') }}" alt="" loading="lazy">
+        <span><strong>Experiences</strong><small>Things to do near {{ destination_name }}</small></span><span aria-hidden="true">›</span>
+      </a>
+      <a class="trip-recommendation" href="/search?q=food">
+        <img src="{{ url_for('images', filename='disney discovery reef.png') }}" alt="" loading="lazy">
+        <span><strong>Food & dining</strong><small>Find places to eat</small></span><span aria-hidden="true">›</span>
+      </a>
+      <a class="trip-recommendation" href="/guides">
+        <img src="{{ url_for('images', filename='disney imagination garden 2.png') }}" alt="" loading="lazy">
+        <span><strong>Travel tips</strong><small>Local guides and advice</small></span><span aria-hidden="true">›</span>
+      </a>
+    </div>
+  </section>
+</main>
 {% endblock %}

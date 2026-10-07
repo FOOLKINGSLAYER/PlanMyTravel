@@ -1,0 +1,37 @@
+<div class="results-toolbar">
+  <p><strong>{{ total }} result{{ '' if total == 1 else 's' }}</strong> to inspire your next getaway</p>
+  {% if page_count > 1 %}<span>Page {{ page }} of {{ page_count }}</span>{% endif %}
+</div>
+{% if results %}
+<div class="card-grid search-result-grid">
+  {% for item in results %}
+  <article class="package-card search-result-card">
+    <div class="package-image">
+      <a class="package-image-link" href="{{ item.url }}">
+        <img src="{{ item.image }}" alt="{{ item.title }}" loading="lazy">
+      </a>
+      <span class="image-badge">{{ item.kind }}</span>
+      {% if item.kind in ['Destination', 'Package', 'Experience'] %}
+      <button class="save-button{% if item.saved|default(false) %} is-saved{% endif %}" type="button" aria-label="Save {{ item.title }}" aria-pressed="{{ 'true' if item.saved|default(false) else 'false' }}" data-save-toggle data-item-type="{{ item.kind|lower }}" data-item-id="{{ item.id }}">{{ '♥' if item.saved|default(false) else '♡' }}</button>
+      {% endif %}
+    </div>
+    <div class="package-info">
+      <div class="eyebrow">{{ item.location }} · {{ item.kind }}</div>
+      <h3><a href="{{ item.url }}">{{ item.title }}</a></h3>
+      <p>{{ item.summary }}</p>
+      <div class="package-meta"><span>{% if item.rating %}★ {{ '%.1f'|format(item.rating) }}{% else %}New{% endif %}</span><span>{{ item.category_value }}</span></div>
+      <div class="price-row"><span>{% if item.price_text is defined %}From <strong>{{ item.price_text }}</strong>{% elif item.price_value %}Estimated from <strong>{{ item.price_value }}</strong>{% endif %}</span><a class="text-link" href="{{ item.url }}">Explore →</a></div>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-search"><h2>No matches yet</h2><p>Try a broader destination, category, or travel style.</p></div>
+{% endif %}
+{% if page_count > 1 %}
+<nav class="search-pagination" aria-label="Search result pages">
+  {% if prev_url %}<a href="{{ prev_url }}" rel="prev">← Previous</a>{% endif %}
+  <span>Page {{ page }} of {{ page_count }}</span>
+  {% if next_url %}<a href="{{ next_url }}" rel="next">Next →</a>{% endif %}
+</nav>
+{% endif %}

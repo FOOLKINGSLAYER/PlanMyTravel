@@ -1,6 +1,87 @@
 {% extends "base.html" %}
 {% block title %}Account settings · {{ app_name|default('PlanMyTravel') }}{% endblock %}
 {% block content %}
-<section class="page-hero page-hero-small"><div class="container"><span class="eyebrow">YOUR SPACE</span><h1>Account settings</h1><p>Keep your details up to date and your preferences close at hand.</p></div></section>
-<section class="section section-tight"><div class="container account-layout"><nav class="account-nav" aria-label="Account sections"><a class="active" href="/account">Personal details</a><a href="/trips">My trips</a><a href="/wallet">Travel wallet</a><a href="/account/preferences">Preferences</a><form action="/logout" method="post">{{ csrf_token() }}<button class="button button-ghost" type="submit">Log out</button></form></nav><form class="form-card account-form" action="/account" method="post">{{ csrf_token() }}<h2>Personal details</h2><p class="muted">The basics we use to make your travel experience smoother.</p><div class="form-grid"><label class="filter-label">First name<input name="first_name" autocomplete="given-name" value="{{ user.first_name|default('') }}"></label><label class="filter-label">Last name<input name="last_name" autocomplete="family-name" value="{{ user.last_name|default('') }}"></label><label class="filter-label span-2">Email address<input type="email" name="email" autocomplete="email" value="{{ user.email|default('') }}"></label><label class="filter-label span-2">Phone number<input type="tel" name="phone" autocomplete="tel" value="{{ user.phone|default('') }}"></label></div><button class="button button-primary" type="submit">Save changes</button></form></div></section>
+<section class="page-hero page-hero-small">
+  <div class="container">
+    <span class="eyebrow">YOUR SPACE</span>
+    <h1>Account settings</h1>
+    <p>Keep your details up to date and your preferences close at hand.</p>
+  </div>
+</section>
+<section class="section section-tight">
+  <div class="container account-layout">
+    <nav class="account-nav" aria-label="Account sections">
+      <a class="active" href="/account">Personal details</a>
+      <a href="/account/preferences">Preferences</a>
+      <a href="/account/password">Change password</a>
+      <a href="/trips">My trips</a>
+      <a href="/wallet">Travel wallet</a>
+      <form action="/logout" method="post">
+        {{ csrf_token() }}
+        <button class="button button-ghost" type="submit">Log out</button>
+      </form>
+    </nav>
+    <div class="account-content">
+      {% if error %}<div class="alert alert-error" role="alert">{{ error }}</div>{% endif %}
+      {% if success %}<div class="alert alert-success" role="status">{{ success }}</div>{% endif %}
+      <form class="form-card account-form" action="/account" method="post" enctype="multipart/form-data">
+        {{ csrf_token() }}
+        <h2>Personal details</h2>
+        <p class="muted">The basics we use to make your travel experience smoother.</p>
+        <div class="form-grid">
+          <label class="filter-label span-2">Profile picture
+            <img src="{{ user.profile_picture_url|default(url_for('images', filename='placeholders/default.jpg')) }}" alt="Your profile picture" width="96" height="96" style="object-fit:cover;border-radius:50%;margin:8px 0">
+            <input type="file" name="profile_picture" accept="image/jpeg,image/png,image/webp">
+            <small class="muted">JPEG, PNG, or WebP; maximum 8 MB.</small>
+          </label>
+          <label class="filter-label">First name
+            <input name="first_name" autocomplete="given-name" maxlength="100" required value="{{ user.first_name|default('') }}">
+          </label>
+          <label class="filter-label">Last name
+            <input name="last_name" autocomplete="family-name" maxlength="100" value="{{ user.last_name|default('') }}">
+          </label>
+          <label class="filter-label span-2">Email address
+            <input type="email" name="email" autocomplete="email" maxlength="254" required value="{{ user.email|default('') }}">
+          </label>
+          <label class="filter-label">Phone number
+            <input type="tel" name="phone" autocomplete="tel" maxlength="40" value="{{ user.phone|default('') }}">
+          </label>
+          <label class="filter-label">Date of birth
+            <input type="date" name="date_of_birth" autocomplete="bday" value="{{ user.date_of_birth|default('') }}">
+          </label>
+          <label class="filter-label">Country
+            <input name="country" autocomplete="country-name" maxlength="100" value="{{ user.country|default('') }}">
+          </label>
+          <label class="filter-label">Preferred currency
+            <select name="preferred_currency" required>
+              {% for currency in ['USD', 'EUR', 'GBP', 'INR', 'SGD'] %}
+              <option value="{{ currency }}" {% if user.preferred_currency|default('USD') == currency %}selected{% endif %}>{{ currency }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label class="filter-label span-2">About you
+            <textarea name="bio" rows="3" maxlength="500" placeholder="Share a little about the way you like to travel.">{{ user.bio|default('') }}</textarea>
+          </label>
+        </div>
+        <button class="button button-primary" type="submit">Save changes</button>
+      </form>
+      <section class="form-card account-form" aria-labelledby="deactivate-title">
+        <h2 id="deactivate-title">Deactivate account</h2>
+        <p class="muted">Your account will be disabled and you’ll be signed out. You won’t be able to sign in again unless support restores it.</p>
+        <form action="/account/deactivate" method="post">
+          {{ csrf_token() }}
+          <div class="form-grid">
+            <label class="filter-label">Confirm your password
+              <input type="password" name="password" autocomplete="current-password" required>
+            </label>
+            <label class="filter-label">Type <strong>deactivate</strong> to confirm
+              <input name="confirmation" autocomplete="off" required>
+            </label>
+          </div>
+          <button class="button button-outline" type="submit">Deactivate my account</button>
+        </form>
+      </section>
+    </div>
+  </div>
+</section>
 {% endblock %}

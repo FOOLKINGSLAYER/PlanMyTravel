@@ -1,9 +1,15 @@
 <article class="package-card">
-  <a class="package-image" href="{{ package.url|default('/packages/' ~ package.slug|default(package.id|default('disney-singapore'))) }}">
-    <img src="{{ package.image|default(url_for('images', filename='disney discovery reef.png')) }}" alt="{{ package.image_alt|default(package.title|default('Resort and destination')) }}" loading="lazy">
+  <div class="package-image">
+    <a class="package-image-link" href="{{ package.url|default('/packages/' ~ package.slug|default(package.id|default('disney-singapore'))) }}">
+      <img src="{{ package.image|default(url_for('images', filename='disney discovery reef.png')) }}" alt="{{ package.image_alt|default(package.title|default('Resort and destination')) }}" loading="lazy">
+    </a>
     {% if package.badge|default('') %}<span class="image-badge">{{ package.badge }}</span>{% endif %}
-    <button class="save-button" type="button" aria-label="Save {{ package.title|default('this package') }}" data-save-toggle>♡</button>
-  </a>
+    {% if package.id|default('') %}
+    <button class="save-button{% if package.saved|default(false) %} is-saved{% endif %}" type="button" aria-label="Save {{ package.title|default('this package') }}" aria-pressed="{{ 'true' if package.saved|default(false) else 'false' }}" data-save-toggle data-item-type="package" data-item-id="{{ package.id }}">{{ '♥' if package.saved|default(false) else '♡' }}</button>
+    {% else %}
+    <a class="save-button" href="/login" aria-label="Log in to save this trip">♡</a>
+    {% endif %}
+  </div>
   <div class="package-info">
     <div class="eyebrow">{{ package.location|default('Singapore · 4 days') }}</div>
     <h3><a href="{{ package.url|default('/packages/' ~ package.slug|default(package.id|default('disney-singapore'))) }}">{{ package.title|default('Disney Adventure Singapore') }}</a></h3>
