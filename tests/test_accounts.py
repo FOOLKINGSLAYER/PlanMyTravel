@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 import re
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -21,7 +23,100 @@ from app.services.media import MediaStorageError, store_image
 from app.services.wallet import add_funds, charge
 
 
-def test_vercel_uses_writable_runtime_paths(tmp_path, monkeypatch):
+def test_vercel_requires_turso_instead_of_falling_back_to_sqlite(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+
+    with pytest.raises(RuntimeError, match="SQLite fallback is disabled"):
+        create_app(
+            {
+                "TESTING": True,
+                "SECRET_KEY": "test-secret-key",
+                "DATABASE_URL": "",
+                "DATABASE_AUTH_TOKEN": "",
+                "TURSO_DATABASE_URL": "",
+                "TURSO_AUTH_URL": "",
+                "TURSO_AUTH_TOKEN": "",
+            }
+        )
+
+    assert not (tmp_path / "planmytravel").exists()
+
+
+def test_vercel_fails_clearly_when_turso_schema_is_incomplete(
+    tmp_path, monkeypatch
+):
+    import libsql
+
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setattr(
+        libsql,
+        "connect",
+        lambda **_kwargs: sqlite3.connect(str(tmp_path / "empty.sqlite3")),
+    )
+
+    with pytest.raises(RuntimeError, match="missing required schema objects"):
+        create_app(
+            {
+                "TESTING": True,
+                "SECRET_KEY": "test-secret-key",
+                "DATABASE_URL": "libsql://turso-test.invalid",
+                "DATABASE_AUTH_TOKEN": "test-token",
+            }
+        )
+
+
+def test_vercel_rejects_non_turso_database_urls(monkeypatch):
+    monkeypatch.setenv("VERCEL", "1")
+
+    with pytest.raises(RuntimeError, match="requires a libsql:// or HTTPS"):
+        create_app(
+            {
+                "TESTING": True,
+                "SECRET_KEY": "test-secret-key",
+                "DATABASE_URL": "sqlite:///tmp/production.sqlite3",
+                "DATABASE_AUTH_TOKEN": "test-token",
+            }
+        )
+
+
+def test_vercel_uses_existing_turso_schema_without_writes(
+    tmp_path, monkeypatch
+):
+    import libsql
+    import app.db as db_module
+
+    monkeypatch.delenv("VERCEL", raising=False)
+    database_path = tmp_path / "initialized.sqlite3"
+    local_app = create_app(
+        {
+            "TESTING": True,
+            "SECRET_KEY": "test-secret-key",
+            "DATABASE_PATH": str(database_path),
+            "DATABASE_URL": "",
+            "DATABASE_AUTH_TOKEN": "",
+            "TURSO_DATABASE_URL": "",
+            "TURSO_AUTH_URL": "",
+            "TURSO_AUTH_TOKEN": "",
+            "INSTANCE_PATH": str(tmp_path / "local-instance"),
+            "IMAGES_DIR": str(tmp_path / "local-images"),
+            "UPLOADS_DIR": str(tmp_path / "local-uploads"),
+        }
+    )
+    assert local_app
+
+    def connect_to_initialized_test_database(*, database, auth_token):
+        assert database == "libsql://turso-test.invalid"
+        assert auth_token == "test-token"
+        return sqlite3.connect(str(database_path))
+
+    def reject_runtime_migration(*_args, **_kwargs):
+        pytest.fail("Vercel startup must not run database migrations.")
+
+    monkeypatch.setattr(db_module, "init_db", reject_runtime_migration)
+    monkeypatch.setattr(libsql, "connect", connect_to_initialized_test_database)
     monkeypatch.setenv("VERCEL", "1")
     monkeypatch.setenv("TMPDIR", str(tmp_path))
 
@@ -29,26 +124,52 @@ def test_vercel_uses_writable_runtime_paths(tmp_path, monkeypatch):
         {
             "TESTING": True,
             "SECRET_KEY": "test-secret-key",
-            "DATABASE_URL": "",
-            "DATABASE_AUTH_TOKEN": "",
-            "TURSO_DATABASE_URL": "",
-            "TURSO_AUTH_URL": "",
-            "TURSO_AUTH_TOKEN": "",
+            "DATABASE_URL": "libsql://turso-test.invalid",
+            "DATABASE_AUTH_TOKEN": "test-token",
+            "INSTANCE_PATH": str(tmp_path / "vercel-instance"),
+            "IMAGES_DIR": str(ROOT / "images"),
+            "UPLOADS_DIR": str(tmp_path / "vercel-uploads"),
         }
     )
 
-    writable_root = tmp_path / "planmytravel"
-    assert app.instance_path == str(writable_root / "instance")
-    assert app.config["DATABASE_PATH"] == str(
-        writable_root / "instance" / "planmytravel.sqlite3"
+    client = app.test_client()
+    assert client.get("/").status_code == 200
+    assert client.get("/api/health").status_code == 200
+    assert client.get("/login").status_code == 200
+    assert client.get("/admin/login").status_code == 200
+    assert client.get("/favicon.ico").headers["Location"] == (
+        "/static/images/favicon.svg"
     )
-    assert app.config["UPLOADS_DIR"] == str(writable_root / "uploads")
-    assert app.config["IMAGES_DIR"] == str(ROOT / "images")
-    favicon = app.test_client().get("/favicon.ico")
-    assert favicon.status_code == 302
-    assert favicon.headers["Location"] == "/static/images/favicon.svg"
-    assert Path(app.instance_path).is_dir()
-    assert Path(app.config["UPLOADS_DIR"]).is_dir()
+    assert not Path(app.instance_path).exists()
+    assert not Path(app.config["UPLOADS_DIR"]).exists()
+
+
+def test_internal_errors_are_logged_but_not_shown_to_clients(
+    app, caplog, monkeypatch
+):
+    secret_marker = "never-render-this-in-the-response"
+
+    def raise_internal_error():
+        raise RuntimeError(secret_marker)
+
+    def fail_if_error_page_queries_database(*_args, **_kwargs):
+        raise AssertionError("The 500 error template must not query the database.")
+
+    app.config["PROPAGATE_EXCEPTIONS"] = False
+    app.add_url_rule("/_test-internal-error", view_func=raise_internal_error)
+    monkeypatch.setattr(
+        "app.db_utils.query_all", fail_if_error_page_queries_database
+    )
+    caplog.set_level(logging.ERROR, logger=app.logger.name)
+
+    response = app.test_client().get("/_test-internal-error")
+
+    assert response.status_code == 500
+    assert secret_marker not in response.get_data(as_text=True)
+    assert b"We hit a little travel hiccup" in response.data
+    assert "Unhandled server error on /_test-internal-error" in caplog.text
+    assert f"RuntimeError: {secret_marker}" in caplog.text
+    assert "must not query the database" not in caplog.text
 
 
 @pytest.fixture

@@ -7,6 +7,7 @@ from pathlib import Path
 
 from flask import (
     Flask,
+    g,
     jsonify,
     redirect,
     render_template,
@@ -44,6 +45,7 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
 
     has_database_url = bool(app.config.get("DATABASE_URL"))
     has_database_token = bool(app.config.get("DATABASE_AUTH_TOKEN"))
+    is_vercel = bool(os.environ.get("VERCEL"))
 
     if has_database_url != has_database_token:
         raise RuntimeError(
@@ -51,12 +53,22 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
             "or omit both to use local SQLite."
         )
 
-    is_vercel = bool(os.environ.get("VERCEL"))
+    if is_vercel:
+        if not has_database_url:
+            raise RuntimeError(
+                "TURSO_DATABASE_URL and TURSO_AUTH_TOKEN are required on Vercel; "
+                "SQLite fallback is disabled."
+            )
+        database_url = str(app.config["DATABASE_URL"]).strip().lower()
+        if not database_url.startswith(("libsql://", "https://", "http://")):
+            raise RuntimeError(
+                "Vercel requires a libsql:// or HTTPS Turso database URL."
+            )
 
-    Path(app.instance_path).mkdir(parents=True, exist_ok=True)
     if not is_vercel:
+        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
         Path(app.config["IMAGES_DIR"]).mkdir(parents=True, exist_ok=True)
-    Path(app.config["UPLOADS_DIR"]).mkdir(parents=True, exist_ok=True)
+        Path(app.config["UPLOADS_DIR"]).mkdir(parents=True, exist_ok=True)
 
     app.permanent_session_lifetime = timedelta(
         minutes=int(app.config["USER_SESSION_MINUTES"])
@@ -71,9 +83,12 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
     logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"))
     app.logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 
-    from app.db import init_db
+    from app.db import init_db, validate_schema
 
-    init_db(app)
+    if is_vercel:
+        validate_schema(app)
+    else:
+        init_db(app)
 
     with app.app_context():
         setting = app.extensions.get("planmytravel_settings")
@@ -99,6 +114,23 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
 
     @app.context_processor
     def inject_shared_context() -> dict[str, object]:
+        def csrf_input() -> Markup:
+            token = escape(csrf_token())
+            return Markup(
+                f'<input type="hidden" name="csrf_token" value="{token}">'
+            )
+
+        if getattr(g, "rendering_internal_error", False):
+            return {
+                "app_name": app.config["APP_NAME"],
+                "csrf_token": csrf_input,
+                "csrf_value": csrf_token,
+                "current_user_id": None,
+                "current_user": None,
+                "site_settings": {},
+                "current_year": datetime.now(timezone.utc).year,
+            }
+
         from app.db_utils import query_all
 
         current_user = authenticated_user()
@@ -110,12 +142,6 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
                 "SELECT setting_key, setting_value FROM site_settings"
             )
         }
-
-        def csrf_input() -> Markup:
-            token = escape(csrf_token())
-            return Markup(
-                f'<input type="hidden" name="csrf_token" value="{token}">'
-            )
 
         return {
             "app_name": app.config["APP_NAME"],
@@ -196,10 +222,24 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
     @app.errorhandler(500)
     def handle_http_error(error):
         status = getattr(error, "code", 500)
-        message = getattr(error, "description", "Something went wrong.")
+        message = (
+            "The server encountered an internal error. Please try again later."
+            if status == 500
+            else getattr(error, "description", "Something went wrong.")
+        )
 
         if status == 500:
-            app.logger.exception("Unhandled 500 error on %s", request.path)
+            g.rendering_internal_error = True
+            original_error = getattr(error, "original_exception", None) or error
+            app.logger.error(
+                "Unhandled server error on %s",
+                request.path,
+                exc_info=(
+                    type(original_error),
+                    original_error,
+                    original_error.__traceback__,
+                ),
+            )
 
         if request.path.startswith("/api/"):
             return jsonify({"error": {"message": message, "status": status}}), status

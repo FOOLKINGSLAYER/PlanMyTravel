@@ -64,12 +64,15 @@ with Flask, Jinja, vanilla HTML/CSS/JavaScript, Turso/libSQL, and Gemini.
 
 ## Deploying to Vercel
 
-Vercel's application bundle is read-only. The app uses Vercel's temporary
-directory for its instance files, local SQLite fallback, and uploads so the
-function can start. Temporary files are not persistent across deployments or
-function instances. For production, configure `TURSO_DATABASE_URL` and
-`TURSO_AUTH_TOKEN` for persistent database storage, and configure the three
-Cloudinary credentials above for persistent image uploads.
+Vercel's application bundle is read-only, so the production app does not create
+runtime directories or use SQLite. Configure `TURSO_DATABASE_URL` and
+`TURSO_AUTH_TOKEN` for the persistent database, and configure
+`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` for
+persistent image uploads. Before deploying a new or changed schema, initialize
+the configured Turso database once with `python scripts/init_db.py`; Vercel
+validates the schema at startup but does not run migrations or seed demo data
+during function initialization. Local development continues to initialize
+SQLite and create its normal directories automatically.
 
 ## Creating a Turso database
 

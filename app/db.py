@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import sqlite3
 import json
+import re
+import sqlite3
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote, unquote
@@ -467,6 +468,46 @@ def _apply_schema(connection: Any) -> None:
         )
 
 
+def validate_schema(app: Flask | None = None) -> None:
+    """Check that a remotely managed database has the application schema."""
+    if app is not None:
+        with app.app_context():
+            validate_schema()
+        return
+    if not has_app_context():
+        raise RuntimeError(
+            "validate_schema() requires an app argument or active app context."
+        )
+
+    schema_files = sorted(_SCHEMA_DIR.glob("*.sql"))
+    required_objects: set[str] = set()
+    for schema_file in schema_files:
+        for statement in schema_file.read_text(encoding="utf-8").split(";"):
+            match = re.match(
+                r"CREATE\s+(?:TABLE|VIEW)\s+IF\s+NOT\s+EXISTS\s+([A-Za-z_][A-Za-z0-9_]*)",
+                statement.strip(),
+                flags=re.IGNORECASE,
+            )
+            if match:
+                required_objects.add(match.group(1))
+
+    if not required_objects:
+        raise RuntimeError(f"No database objects found in schema directory: {_SCHEMA_DIR}")
+
+    present_objects = {
+        row[0]
+        for row in get_db().execute(
+            "SELECT name FROM sqlite_master WHERE type IN ('table', 'view')"
+        ).fetchall()
+    }
+    missing_objects = sorted(required_objects - present_objects)
+    if missing_objects:
+        raise RuntimeError(
+            "The Turso database is missing required schema objects. "
+            "Run scripts/init_db.py against the configured database before deploying."
+        )
+
+
 def _migrate_text_primary_key(
     connection: Any, table_statements: list[str], table_name: str
 ) -> None:
@@ -774,4 +815,4 @@ def init_db(app: Flask | None = None, *, seed: bool = True) -> None:
         raise
 
 
-__all__ = ["close_db", "get_db", "init_db", "seed_demo_data"]
+__all__ = ["close_db", "get_db", "init_db", "seed_demo_data", "validate_schema"]
