@@ -31,7 +31,7 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
         root_path=str(ROOT),
         template_folder=str(ROOT / "templates"),
         static_folder=str(ROOT / "static"),
-        instance_path=str(config["INSTANCE_PATH"]),
+        instance_path=str(ROOT / "instance"),
     )
 
     app.config.update(config)
