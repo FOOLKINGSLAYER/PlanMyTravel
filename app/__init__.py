@@ -190,24 +190,13 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
     @app.errorhandler(500)
     def handle_http_error(error):
         status = getattr(error, "code", 500)
-        message = getattr(
-            error,
-            "description",
-            "Something went wrong.",
-        )
+        message = getattr(error, "description", "Something went wrong.")
+
+        if status == 500:
+            app.logger.exception("Unhandled 500 error on %s", request.path)
 
         if request.path.startswith("/api/"):
-            return (
-                jsonify(
-                    {
-                        "error": {
-                            "message": message,
-                            "status": status,
-                        }
-                    }
-                ),
-                status,
-            )
+            return jsonify({"error": {"message": message, "status": status}}), status
 
         return (
             render_template(
