@@ -62,6 +62,15 @@ with Flask, Jinja, vanilla HTML/CSS/JavaScript, Turso/libSQL, and Gemini.
    In Codespaces, open or forward port `5000` to access the site in your
    browser. The development server should not be exposed to the public internet.
 
+## Deploying to Vercel
+
+Vercel's application bundle is read-only. The app uses Vercel's temporary
+directory for its instance files, local SQLite fallback, and uploads so the
+function can start. Temporary files are not persistent across deployments or
+function instances. For production, configure `TURSO_DATABASE_URL` and
+`TURSO_AUTH_TOKEN` for persistent database storage, and configure the three
+Cloudinary credentials above for persistent image uploads.
+
 ## Creating a Turso database
 
 The application connects to an existing Turso/libSQL database. One-time setup

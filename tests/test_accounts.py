@@ -11,6 +11,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.datastructures import FileStorage
 
 from app import create_app
+from app.config import ROOT
 from app.db import get_db, seed_demo_data
 from app.db_utils import query_one
 from app.security import make_admin_cookie
@@ -18,6 +19,36 @@ from app.blueprints import public
 from app.services import travel_inventory
 from app.services.media import MediaStorageError, store_image
 from app.services.wallet import add_funds, charge
+
+
+def test_vercel_uses_writable_runtime_paths(tmp_path, monkeypatch):
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+
+    app = create_app(
+        {
+            "TESTING": True,
+            "SECRET_KEY": "test-secret-key",
+            "DATABASE_URL": "",
+            "DATABASE_AUTH_TOKEN": "",
+            "TURSO_DATABASE_URL": "",
+            "TURSO_AUTH_URL": "",
+            "TURSO_AUTH_TOKEN": "",
+        }
+    )
+
+    writable_root = tmp_path / "planmytravel"
+    assert app.instance_path == str(writable_root / "instance")
+    assert app.config["DATABASE_PATH"] == str(
+        writable_root / "instance" / "planmytravel.sqlite3"
+    )
+    assert app.config["UPLOADS_DIR"] == str(writable_root / "uploads")
+    assert app.config["IMAGES_DIR"] == str(ROOT / "images")
+    favicon = app.test_client().get("/favicon.ico")
+    assert favicon.status_code == 302
+    assert favicon.headers["Location"] == "/static/images/favicon.svg"
+    assert Path(app.instance_path).is_dir()
+    assert Path(app.config["UPLOADS_DIR"]).is_dir()
 
 
 @pytest.fixture

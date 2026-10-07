@@ -13,6 +13,7 @@ from flask import (
     request,
     send_from_directory,
     session,
+    url_for,
 )
 from markupsafe import Markup, escape
 
@@ -31,7 +32,7 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
         root_path=str(ROOT),
         template_folder=str(ROOT / "templates"),
         static_folder=str(ROOT / "static"),
-        instance_path=str(ROOT / "instance"),
+        instance_path=str(config["INSTANCE_PATH"]),
     )
 
     app.config.update(config)
@@ -50,14 +51,12 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
             "or omit both to use local SQLite."
         )
 
-    # Vercel's deployed filesystem is read-only.
-    # Local development still needs these directories.
     is_vercel = bool(os.environ.get("VERCEL"))
 
+    Path(app.instance_path).mkdir(parents=True, exist_ok=True)
     if not is_vercel:
-        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
         Path(app.config["IMAGES_DIR"]).mkdir(parents=True, exist_ok=True)
-        Path(app.config["UPLOADS_DIR"]).mkdir(parents=True, exist_ok=True)
+    Path(app.config["UPLOADS_DIR"]).mkdir(parents=True, exist_ok=True)
 
     app.permanent_session_lifetime = timedelta(
         minutes=int(app.config["USER_SESSION_MINUTES"])
@@ -182,6 +181,13 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
             "User-agent: *\nDisallow: /admin\n",
             200,
             {"Content-Type": "text/plain"},
+        )
+
+    @app.get("/favicon.ico")
+    def favicon():
+        return redirect(
+            url_for("static", filename="images/favicon.svg"),
+            code=302,
         )
 
     @app.errorhandler(400)

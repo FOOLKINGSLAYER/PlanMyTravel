@@ -37,6 +37,21 @@ def _value(file_values: dict[str, str], *names: str, default: str = "") -> str:
 def load_config() -> dict[str, object]:
     file_values = _read_env_file()
     flask_env = _value(file_values, "FLASK_ENV", default="development")
+    is_vercel = bool(os.environ.get("VERCEL"))
+    writable_root = (
+        Path(os.environ.get("TMPDIR") or "/tmp") / "planmytravel"
+        if is_vercel
+        else ROOT
+    )
+    instance_path = Path(
+        _value(
+            file_values,
+            "INSTANCE_PATH",
+            default=str(writable_root / "instance"),
+        )
+    )
+    if not instance_path.is_absolute():
+        instance_path = ROOT / instance_path
     secure_cookie = _value(
         file_values,
         "SESSION_COOKIE_SECURE",
@@ -45,7 +60,13 @@ def load_config() -> dict[str, object]:
     image_dir = Path(_value(file_values, "IMAGES_DIR", default=str(ROOT / "images")))
     if not image_dir.is_absolute():
         image_dir = ROOT / image_dir
-    uploads_dir = Path(_value(file_values, "UPLOADS_DIR", default=str(ROOT / "uploads")))
+    uploads_dir = Path(
+        _value(
+            file_values,
+            "UPLOADS_DIR",
+            default=str(writable_root / "uploads"),
+        )
+    )
     if not uploads_dir.is_absolute():
         uploads_dir = ROOT / uploads_dir
 
@@ -72,12 +93,17 @@ def load_config() -> dict[str, object]:
     return {
         "APP_NAME": "PlanMyTravel",
         "FLASK_ENV": flask_env,
+        "INSTANCE_PATH": str(instance_path),
         "SECRET_KEY": _value(
             file_values, "FLASK_SECRET_KEY", "SECRET_KEY", default=""
         ),
         "DATABASE_URL": database_url,
         "DATABASE_AUTH_TOKEN": database_token,
-        "DATABASE_PATH": str(ROOT / "instance" / "planmytravel.sqlite3"),
+        "DATABASE_PATH": _value(
+            file_values,
+            "DATABASE_PATH",
+            default=str(instance_path / "planmytravel.sqlite3"),
+        ),
         "GEMINI_API_KEYS": list(dict.fromkeys(gemini_keys)),
         "GEMINI_MODEL": _value(
             file_values, "GEMINI_MODEL", default="gemini-2.5-flash"
